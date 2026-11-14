@@ -1,0 +1,306 @@
+{
+  "ucsd": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "uc san diego": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "uc san diego main campus": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "uc san diego campus": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "geisel library": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "92093": {
+    "lat": 32.8801,
+    "lng": -117.2376
+  },
+  "pepper canyon": {
+    "lat": 32.8768,
+    "lng": -117.2325
+  },
+  "pepper canyon west": {
+    "lat": 32.8768,
+    "lng": -117.2325
+  },
+  "pepper canyon east": {
+    "lat": 32.8768,
+    "lng": -117.2325
+  },
+  "uc san diego central campus station": {
+    "lat": 32.8768,
+    "lng": -117.2325
+  },
+  "price center": {
+    "lat": 32.8799,
+    "lng": -117.2365
+  },
+  "price center ucsd": {
+    "lat": 32.8799,
+    "lng": -117.2365
+  },
+  "sixth college": {
+    "lat": 32.8791,
+    "lng": -117.2426
+  },
+  "north torrey pines living and learning neighborhood": {
+    "lat": 32.8791,
+    "lng": -117.2426
+  },
+  "ntplln": {
+    "lat": 32.8791,
+    "lng": -117.2426
+  },
+  "revelle college": {
+    "lat": 32.8727,
+    "lng": -117.242
+  },
+  "revelle": {
+    "lat": 32.8727,
+    "lng": -117.242
+  },
+  "warren college": {
+    "lat": 32.8846,
+    "lng": -117.2337
+  },
+  "warren": {
+    "lat": 32.8846,
+    "lng": -117.2337
+  },
+  "muir college": {
+    "lat": 32.878,
+    "lng": -117.2415
+  },
+  "muir": {
+    "lat": 32.878,
+    "lng": -117.2415
+  },
+  "la jolla": {
+    "lat": 32.833,
+    "lng": -117.2713
+  },
+  "la jolla village coastal": {
+    "lat": 32.833,
+    "lng": -117.2713
+  },
+  "la jolla shores": {
+    "lat": 32.8557,
+    "lng": -117.2558
+  },
+  "university city": {
+    "lat": 32.8532,
+    "lng": -117.2001
+  },
+  "utc": {
+    "lat": 32.8532,
+    "lng": -117.2001
+  },
+  "university towne center": {
+    "lat": 32.8532,
+    "lng": -117.2001
+  },
+  "92122": {
+    "lat": 32.8532,
+    "lng": -117.2001
+  },
+  "torrey pines": {
+    "lat": 32.909,
+    "lng": -117.2443
+  },
+  "torrey hills": {
+    "lat": 32.9228,
+    "lng": -117.2283
+  },
+  "carmel valley": {
+    "lat": 32.945,
+    "lng": -117.227
+  },
+  "92130": {
+    "lat": 32.945,
+    "lng": -117.227
+  },
+  "del mar": {
+    "lat": 32.9595,
+    "lng": -117.2653
+  },
+  "solana beach": {
+    "lat": 32.9912,
+    "lng": -117.2711
+  },
+  "sorrento valley": {
+    "lat": 32.9031,
+    "lng": -117.2046
+  },
+  "mira mesa": {
+    "lat": 32.9156,
+    "lng": -117.1435
+  },
+  "92126": {
+    "lat": 32.9156,
+    "lng": -117.1435
+  },
+  "miramar": {
+    "lat": 32.8914,
+    "lng": -117.1321
+  },
+  "scripps ranch": {
+    "lat": 32.9093,
+    "lng": -117.0974
+  },
+  "rancho penasquitos": {
+    "lat": 32.9608,
+    "lng": -117.1194
+  },
+  "rancho pe\u00f1asquitos": {
+    "lat": 32.9608,
+    "lng": -117.1194
+  },
+  "pq": {
+    "lat": 32.9608,
+    "lng": -117.1194
+  },
+  "clairemont": {
+    "lat": 32.8215,
+    "lng": -117.1955
+  },
+  "clairemont mesa": {
+    "lat": 32.8215,
+    "lng": -117.1955
+  },
+  "92117": {
+    "lat": 32.8215,
+    "lng": -117.1955
+  },
+  "bay park": {
+    "lat": 32.7895,
+    "lng": -117.2032
+  },
+  "bay ho": {
+    "lat": 32.8247,
+    "lng": -117.2221
+  },
+  "pacific beach": {
+    "lat": 32.7978,
+    "lng": -117.2417
+  },
+  "pb": {
+    "lat": 32.7978,
+    "lng": -117.2417
+  },
+  "92109": {
+    "lat": 32.7978,
+    "lng": -117.2417
+  },
+  "mission beach": {
+    "lat": 32.776,
+    "lng": -117.251
+  },
+  "ocean beach": {
+    "lat": 32.7471,
+    "lng": -117.2507
+  },
+  "ob": {
+    "lat": 32.7471,
+    "lng": -117.2507
+  },
+  "point loma": {
+    "lat": 32.726,
+    "lng": -117.2355
+  },
+  "old town": {
+    "lat": 32.7544,
+    "lng": -117.1979
+  },
+  "old town san diego": {
+    "lat": 32.7544,
+    "lng": -117.1979
+  },
+  "linda vista": {
+    "lat": 32.788,
+    "lng": -117.173
+  },
+  "kearny mesa": {
+    "lat": 32.8252,
+    "lng": -117.1394
+  },
+  "serra mesa": {
+    "lat": 32.7985,
+    "lng": -117.1428
+  },
+  "mission valley": {
+    "lat": 32.769,
+    "lng": -117.153
+  },
+  "mission hills": {
+    "lat": 32.7532,
+    "lng": -117.1788
+  },
+  "hillcrest": {
+    "lat": 32.7483,
+    "lng": -117.1606
+  },
+  "university heights": {
+    "lat": 32.7555,
+    "lng": -117.1456
+  },
+  "north park": {
+    "lat": 32.747,
+    "lng": -117.1294
+  },
+  "92104": {
+    "lat": 32.747,
+    "lng": -117.1294
+  },
+  "normal heights": {
+    "lat": 32.7634,
+    "lng": -117.1208
+  },
+  "kensington": {
+    "lat": 32.7653,
+    "lng": -117.1078
+  },
+  "downtown san diego": {
+    "lat": 32.7157,
+    "lng": -117.1611
+  },
+  "downtown": {
+    "lat": 32.7157,
+    "lng": -117.1611
+  },
+  "san diego": {
+    "lat": 32.7157,
+    "lng": -117.1611
+  },
+  "92101": {
+    "lat": 32.7157,
+    "lng": -117.1611
+  },
+  "little italy": {
+    "lat": 32.7245,
+    "lng": -117.1685
+  },
+  "college area": {
+    "lat": 32.7715,
+    "lng": -117.0751
+  },
+  "sdsu": {
+    "lat": 32.7715,
+    "lng": -117.0751
+  },
+  "san diego state": {
+    "lat": 32.7715,
+    "lng": -117.0751
+  },
+  "tierrasanta": {
+    "lat": 32.8212,
+    "lng": -117.0906
+  }
+}
