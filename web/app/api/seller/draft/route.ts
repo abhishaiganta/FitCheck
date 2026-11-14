@@ -28,6 +28,12 @@ export const POST = route('api.seller.draft', async (req: Request) => {
   const ext = TYPES[file.type];
   if (!ext) throw err.badRequest('The photo must be a JPEG, PNG or WebP image.');
   if (file.size > MAX_BYTES) throw err.badRequest('That photo is over 4 MB. Try a smaller one.');
+  // the declared type is only a claim: check the file really is a JPEG, PNG or WebP
+  const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const isJpeg = head[0] === 0xff && head[1] === 0xd8;
+  const isPng = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47;
+  const isWebp = String.fromCharCode(...head.slice(0, 4)) === 'RIFF' && String.fromCharCode(...head.slice(8, 12)) === 'WEBP';
+  if (file.size < 1024 || !(isJpeg || isPng || isWebp)) throw err.badRequest("That file isn't a photo we can read. Try another one.");
 
   const height = Number(form?.get('height_in'));
   if (!Number.isFinite(height) || height <= 0 || height >= 120) throw err.badRequest('Enter the height in inches (1 to 119).');
