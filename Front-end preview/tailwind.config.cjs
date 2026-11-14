@@ -1,0 +1,1 @@
+module.exports={content:['./index.html','./src/**/*.{ts,tsx}'],theme:{extend:{colors:Object.fromEntries(['canvas','surface','forest','amber','mint','ink','muted'].map(key=>[key,'var(--'+key+')'])),fontFamily:{display:['Fraunces','Georgia','serif'],sans:['Inter','system-ui','sans-serif']}}}}
