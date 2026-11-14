@@ -20,7 +20,7 @@ from worker.db import connect
 DEMO_QUERIES = [
     "desk lamp and side table under $40, warm wood, close to campus",
     "nightstand under 30 dollars near Pepper Canyon",
-    "accent chair that ships, no car",
+    "desk lamp that ships, I don't have a car",
 ]
 USDZ_MIME = "model/vnd.usdz+zip"
 results: list[tuple[bool, str]] = []
@@ -139,7 +139,7 @@ def main() -> int:
     ap.add_argument("--site", default=s.site_url)
     ap.add_argument("--min-pinned", type=int, default=8)
     a = ap.parse_args()
-    client = httpx.Client(timeout=httpx.Timeout(30, connect=10))
+    client = httpx.Client(timeout=httpx.Timeout(30, connect=10), follow_redirects=True)  # /api/tts redirects to cached audio in Blob
 
     main_conn = check_db("main", s.database_url)
     demo_conn = check_db("demo", s.database_url_demo)

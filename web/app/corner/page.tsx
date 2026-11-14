@@ -10,7 +10,7 @@ type Result = {
 type SetRow = { id: number; status: 'pending' | 'exporting' | 'ready' | 'failed'; usdz_url: string | null; glb_url: string | null; error: string | null;
   w_in: number | null; d_in: number | null; h_in: number | null };
 
-const EXAMPLES = ['study corner under $80', 'cozy reading corner under $60, no car', 'bedside setup under $40 near Clairemont'];
+const EXAMPLES = ['study corner under $80', 'cozy reading corner under $80', 'living room corner under $100', 'bedside setup under $40 near Clairemont'];
 
 /** "Furnish a corner": one sentence -> a few real items within budget -> one arranged AR scene (Mastra workflow). */
 export default function CornerPage() {
