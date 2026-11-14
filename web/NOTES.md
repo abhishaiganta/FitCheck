@@ -64,9 +64,29 @@ npm run snapshot         # rebuild lib/data/demo_snapshot.json from the branch t
     EPA's figure is about 12.1 M tons generated and about 9.7 M landfilled (2018), so the pitch line
     "Americans landfill about 12 million tons" overstates it slightly.
 
+## Added after the merge (Person A, Nov 14)
+
+- **/corner + `POST /api/corner`, `GET /api/corner/[id]`**: Mastra workflow `furnishCorner`
+  (`mastra/workflows/furnishCorner.ts`, registered in `mastra/index.ts`). It plans the categories (`lib/corner.ts`),
+  then runs `executeSearch` per category in parallel (the same SQL, totals and distances as the cards) and picks one
+  item per category within the combined budget. It queues a `sets` row; the worker arranges the items and builds one
+  USDZ/GLB. Gemini parsing is capped at 6 s, then the keyword parser takes over. Live: ~1 to 2 s per plan.
+  `npm run corner-check` runs it against Neon without queueing.
+- **/sell is live end to end**: `POST /api/seller/draft` (photo shrunk in the browser, uploaded to Blob, `seller_drafts`
+  row with an edit token), `GET /api/seller/draft/[id]` to poll, `POST /api/seller/draft/[id]` `{token, ask_usd}` to
+  publish. The worker makes the hidden `liveroom` listing, a real 3D model (free HF TRELLIS first) and a fair price;
+  the seller's category choice wins over the tagger.
+- **City-only locations**: 138 of 181 Marketplace listings say only "San Diego, CA" (the city centroid, ~12.7 mi from
+  UCSD). `loc_precise` is computed in `ITEM_COLUMNS`. Such items stay in pickup results when the radius is at least
+  10 mi. The card says "pickup in San Diego, exact area not listed", and the spoken "closest" ignores them.
+- `liveroom` is a listing source (seller listings); the card label is "LiveRoom seller".
+- `/admin` GLB uploads: the worker now shrinks `manual` models (<= 150k triangles, 2K textures) before export.
+- **Gemini shares quota with the worker**: `gemini-flash-lite-latest` is `gemini-3.5-flash-lite`, which the worker also
+  tags with once its other models hit their daily cap. The worker's vision RPM is set to 6 to leave room.
+
 ## Not verified live
 
-This was built in a sandbox with no access to Gemini, ElevenLabs, Neon, Bright Data or Vercel, so those calls are tested
-against mocks only. `npm run live-check` is the first thing to run on a laptop. Not done at all:
-Vercel deploy, on-device AR test, Bright Data `verifyStillListed` (needs `BD_UNLOCKER_ZONE`), Mastra Studio, corner-set button.
+`npm run live-check` passes every integration on Neon main (Nov 14): Gemini (3 keys, function call, embeddings),
+ElevenLabs TTS + STT, search, Blob, admin token, Bright Data. Still not done: on-device AR test, Mastra Studio,
+and the Vercel deploy (Root Directory must be `web`).
 The demo snapshot in `lib/data/demo_snapshot.json` is built from fake fixtures; run `npm run snapshot` after the demo branch exists.

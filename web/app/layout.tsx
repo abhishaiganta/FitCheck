@@ -28,10 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="font-display text-2xl font-extrabold tracking-tight">
               LiveRoom
             </Link>
-            <nav aria-label="Main" className="flex gap-1 text-sm font-semibold">
-              <Link className="rounded-md px-2.5 py-2 hover:bg-white" href="/pipeline">Pipeline</Link>
-              <Link className="rounded-md px-2.5 py-2 hover:bg-white" href="/impact">Impact</Link>
-              <Link className="rounded-md px-2.5 py-2 hover:bg-white" href="/sell">Sell</Link>
+            <nav aria-label="Main" className="flex gap-0.5 text-sm font-semibold sm:gap-1">
+              <Link className="rounded-md px-1.5 py-2 hover:bg-white sm:px-2.5" href="/corner">Corner</Link>
+              <Link className="rounded-md px-1.5 py-2 hover:bg-white sm:px-2.5" href="/pipeline">Pipeline</Link>
+              <Link className="rounded-md px-1.5 py-2 hover:bg-white sm:px-2.5" href="/impact">Impact</Link>
+              <Link className="rounded-md px-1.5 py-2 hover:bg-white sm:px-2.5" href="/sell">Sell</Link>
             </nav>
           </div>
           <div className="tape-rule" aria-hidden="true" />

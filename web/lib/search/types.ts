@@ -5,7 +5,7 @@ import type { SearchArgs } from './schema';
 /** A listing joined with its details, asset and baseline, before any per-shopper math. */
 export type RawItem = {
   id: number;
-  source: 'fb_marketplace' | 'craigslist' | 'ebay';
+  source: 'fb_marketplace' | 'craigslist' | 'ebay' | 'liveroom';
   url: string;
   title: string;
   price: number;
@@ -32,6 +32,8 @@ export type RawItem = {
   usdz_url: string | null;
   is_approx_model: boolean;
   baseline_usd: number | null;
+  /** from SQL; computed from city when missing (snapshot) */
+  loc_precise?: boolean;
 };
 
 export type Card = {
@@ -52,6 +54,8 @@ export type Card = {
   extra_usd: number; // shipping or estimated gas
   road_mi: number | null;
   drive_min: number | null;
+  /** false: the listing only says "San Diego", so road_mi/drive_min are rough (from the city centre) */
+  loc_precise: boolean;
   city: string | null;
   w_in: number | null; d_in: number | null; h_in: number | null;
   dims_approx: boolean;

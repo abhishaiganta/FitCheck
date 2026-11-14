@@ -3,7 +3,7 @@
 import { buildArHref } from '../logic/arHref';
 import { carFit, type Car, type Fit } from '../logic/carFit';
 import {
-  WALK_MAX_LB, WALK_MAX_MI, driveMinutes, hoursAgo, maxRoadMiles, pickupCost, roadMiles, savingsVsNew,
+  CITY_ONLY_MIN_RADIUS_MI, WALK_MAX_LB, WALK_MAX_MI, driveMinutes, isPreciseLocation, hoursAgo, maxRoadMiles, pickupCost, roadMiles, savingsVsNew,
 } from '../logic/cost';
 import type { Origin } from '../logic/geo';
 import type { SearchArgs } from './schema';
@@ -29,6 +29,7 @@ export function toCard(r: RawItem, c: Computed, now = new Date()): Card {
     (r.listed_w != null && r.w != null && Math.abs(r.listed_w - r.w) > 2) ||
     (r.listed_d != null && r.d != null && Math.abs(r.listed_d - r.d) > 2);
   const photo = r.photo_urls?.[r.best_photo_idx] ?? r.photo_urls?.[0] ?? null;
+  const locPrecise = r.loc_precise ?? isPreciseLocation(r.city, r.lat);
   const card: Card = {
     id: Number(r.id), source: r.source, url: r.url, title: r.title, photo,
     category: r.category, style_tags: r.style_tags ?? [], condition: r.condition, summary: r.summary,
@@ -36,6 +37,7 @@ export function toCard(r: RawItem, c: Computed, now = new Date()): Card {
     mode: c.mode, total_usd: c.total, extra_usd: c.extra,
     road_mi: c.road_mi == null ? null : Math.round(c.road_mi * 10) / 10,
     drive_min: c.road_mi == null ? null : driveMinutes(c.road_mi),
+    loc_precise: locPrecise,
     city: r.city, w_in: r.w, d_in: r.d, h_in: r.h, dims_approx: dimsApprox, weight_lb_est: r.weight_lb,
     has_model: hasModel, asset_status: r.asset_status, is_approx_model: !!r.is_approx_model,
     glb_url: r.glb_url, usdz_url: r.usdz_url, ar_href: null,
@@ -61,7 +63,7 @@ export function costFor(r: RawItem, f: SearchArgs, origin: Origin, fuel: number)
   if (road != null && !f.ships_only) {
     if (!f.has_car) {
       if (road <= WALK_MAX_MI && (r.weight_lb ?? 999) <= WALK_MAX_LB) pickup = r.price;
-    } else if (road <= maxRoadMiles(f)) pickup = Math.round((r.price + pickupCost(road, fuel)) * 100) / 100;
+    } else if (road <= maxRoadMiles(f) || (!(r.loc_precise ?? isPreciseLocation(r.city, r.lat)) && maxRoadMiles(f) >= CITY_ONLY_MIN_RADIUS_MI)) pickup = Math.round((r.price + pickupCost(road, fuel)) * 100) / 100;
   }
   const ship = r.ships && (f.ships_ok || f.ships_only) ? r.price + (r.shipping ?? 0) : null;
   if (pickup == null && ship == null) return null;

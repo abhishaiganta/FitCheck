@@ -1,0 +1,16 @@
+{
+  "_note": "Typical W x D x H in inches per category. Used for the orientation ratio when listing dimensions are estimated, and for the height when it is missing. Shared by exporter/orient.js and worker/orient.py.",
+  "side_table": [20, 18, 22],
+  "nightstand": [20, 16, 24],
+  "coffee_table": [44, 22, 17],
+  "desk_lamp": [8, 8, 18],
+  "floor_lamp": [12, 12, 60],
+  "stool": [14, 14, 22],
+  "ottoman": [20, 18, 16],
+  "accent_chair": [28, 30, 33],
+  "dining_chair": [18, 20, 36],
+  "dresser": [50, 18, 34],
+  "bookshelf": [30, 12, 65],
+  "desk": [48, 24, 30],
+  "other": [24, 20, 28]
+}

@@ -5,6 +5,15 @@ export const DEFAULT_FUEL_USD_PER_MI = 0.15;
 export const DEFAULT_MAX_DISTANCE_MI = 10;
 export const WALK_MAX_MI = 1;
 export const WALK_MAX_LB = 15;
+/** Listings that only say "San Diego" sit at the city centroid. Keep them when the shopper's radius is at least this. */
+export const CITY_ONLY_MIN_RADIUS_MI = 10;
+
+/** False when the listing's location is just the city name (its lat/lng is the city centroid). */
+export function isPreciseLocation(city: string | null | undefined, lat: number | null | undefined): boolean {
+  if (lat == null) return false;
+  const c = (city ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  return !['sandiego', 'sandiegoca', 'sandiegocalifornia', ''].includes(c);
+}
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

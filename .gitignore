@@ -1,0 +1,23 @@
+# secrets: never commit
+SanD Hacks API Keys
+SanD Hacks API Keys*
+.env
+.env.*
+!.env.example
+*.pem
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# node
+node_modules/
+.next/
+# worker scratch
+worker/.cache/
+worker/.localstore/
+*.log
+previews/
+# hand-made models waiting for scripts.import_model (hosted on Blob after import)
+models_in/*.glb
+models_in/*.gltf

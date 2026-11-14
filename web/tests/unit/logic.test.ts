@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AR_BANNER_TAPPED, buildArHref } from '@/lib/logic/arHref';
 import { carFit, findCarInText, matchCar, shortCarName, type Car } from '@/lib/logic/carFit';
 import {
-  driveMinutes, formatDistance, formatUsd, haversineMi, hoursAgo, maxRoadMiles, pickupCost, roadMiles, savingsVsNew, totalCost,
+  driveMinutes, formatDistance, formatUsd, haversineMi, hoursAgo, isPreciseLocation, maxRoadMiles, pickupCost, roadMiles, savingsVsNew, totalCost,
 } from '@/lib/logic/cost';
 import { lookupPlace, resolveOrigin } from '@/lib/logic/geo';
 
@@ -157,5 +157,14 @@ describe('origin', () => {
     expect(lookupPlace('92122')?.name).toBe('UTC');
     expect(lookupPlace('la jolla village')?.name).toBe('La Jolla Village');
     expect(lookupPlace('la jolla')?.name).toBe('La Jolla');
+  });
+});
+
+describe('city-only locations', () => {
+  it('a listing that only says "San Diego" has no precise location', () => {
+    expect(isPreciseLocation('San Diego, CA', 32.7157)).toBe(false);
+    expect(isPreciseLocation('san diego', 32.7157)).toBe(false);
+    expect(isPreciseLocation('La Jolla, CA', 32.84)).toBe(true);
+    expect(isPreciseLocation('Clairemont', null)).toBe(false);
   });
 });

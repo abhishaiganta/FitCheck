@@ -1,7 +1,7 @@
 // The single hybrid search query (spec section 7): SQL filters + pgvector similarity + cost ranking.
 import { query, readBranch, toVector, type Branch } from '../db';
 import type { Car } from '../logic/carFit';
-import { maxRoadMiles } from '../logic/cost';
+import { CITY_ONLY_MIN_RADIUS_MI, maxRoadMiles } from '../logic/cost';
 import type { Origin } from '../logic/geo';
 import { DEMO_PIN_BOOST, RESULT_LIMIT, TOO_BIG_PENALTY, styleWords, toCard } from './evaluate';
 import type { SearchArgs } from './schema';
@@ -16,7 +16,10 @@ export const ITEM_COLUMNS = `
   coalesce(a.final_w_in, d.w_in)::float8 as w, coalesce(a.final_d_in, d.d_in)::float8 as d,
   coalesce(a.final_h_in, d.h_in)::float8 as h,
   d.w_in::float8 as listed_w, d.d_in::float8 as listed_d,
-  a.status::text as asset_status, a.glb_url, a.usdz_url, coalesce(a.is_approx_model, false) as is_approx_model`;
+  a.status::text as asset_status, a.glb_url, a.usdz_url, coalesce(a.is_approx_model, false) as is_approx_model,
+  -- false when the listing only says "San Diego": its lat/lng is the city centroid, not where the item is
+  (l.lat is not null and lower(regexp_replace(coalesce(l.city, ''), '[^a-zA-Z]', '', 'g'))
+     not in ('sandiego', 'sandiegoca', 'sandiegocalifornia', '')) as loc_precise`;
 
 export const BASELINE_JOIN = `
   left join lateral (
@@ -61,7 +64,7 @@ opts as (
   select b.*,
     case when b.road_mi is null or $18::bool then null
          when not $7::bool then case when b.road_mi <= 1 and coalesce(b.weight_lb, 999) <= 15 then b.price end
-         when b.road_mi <= $5::float8 then round((b.price + b.road_mi * 2 * $14::float8)::numeric, 2)::float8
+         when b.road_mi <= $5::float8 or (not b.loc_precise and $5::float8 >= ${CITY_ONLY_MIN_RADIUS_MI}) then round((b.price + b.road_mi * 2 * $14::float8)::numeric, 2)::float8
     end as pickup_total,
     case when b.ships and ($6::bool or $18::bool) then b.price + coalesce(b.shipping, 0) end as ship_total
   from base b

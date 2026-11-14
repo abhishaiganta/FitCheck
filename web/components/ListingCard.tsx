@@ -7,7 +7,7 @@ import type { Card } from '@/lib/search/types';
 import { ModelPreview } from './ModelPreview';
 import { QrDialog } from './QrDialog';
 
-const SOURCE: Record<Card['source'], string> = { craigslist: 'Craigslist', fb_marketplace: 'Facebook Marketplace', ebay: 'eBay' };
+const SOURCE: Record<Card['source'], string> = { craigslist: 'Craigslist', fb_marketplace: 'Facebook Marketplace', ebay: 'eBay', liveroom: 'LiveRoom seller' };
 const num = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 const smallMoney = (n: number) => (n < 1 ? `$${n.toFixed(2)}` : `$${Math.round(n)}`);
 
@@ -94,7 +94,10 @@ export function ListingCard({ card: c, carAsked, carUnknown, modelBroken, large 
 
         <p className="text-[1.05rem] font-semibold">
           {c.total_usd <= 0 ? 'FREE' : c.mode === 'ship' ? `Ships ${formatUsdShort(c.extra_usd).replace('FREE', 'free')}, total ${smallMoney(c.total_usd)}` : `${formatUsdShort(c.price_usd)}`}
-          {c.mode === 'pickup' && c.road_mi != null && (
+          {c.mode === 'pickup' && c.road_mi != null && c.loc_precise === false && (
+            <span className="font-normal text-muted"> · pickup in San Diego, exact area not listed (~{smallMoney(c.extra_usd)} gas est.)</span>
+          )}
+          {c.mode === 'pickup' && c.road_mi != null && c.loc_precise !== false && (
             <span className="font-normal text-muted"> · {formatDistance(c.road_mi)} pickup (~{smallMoney(c.extra_usd)} gas est., ~{c.drive_min} min drive)</span>
           )}
           {c.mode === 'walk' && c.road_mi != null && (

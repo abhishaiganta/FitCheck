@@ -25,7 +25,7 @@ export function spokenSummary(cards: Card[], f: SearchArgs): string {
   if (!cards.length) return emptyMessage(f);
   const s: string[] = [];
   s.push(`Found ${countPhrase(cards)}${f.max_total_usd ? ` under $${f.max_total_usd}` : ''}.`);
-  const pickups = cards.filter((c) => c.road_mi != null && c.mode !== 'ship').sort((a, b) => a.road_mi! - b.road_mi!);
+  const pickups = cards.filter((c) => c.road_mi != null && c.mode !== 'ship' && c.loc_precise !== false).sort((a, b) => a.road_mi! - b.road_mi!);
   const closest = pickups[0];
   if (closest) {
     s.push(`The closest is ${money(closest.price_usd)}, about ${miles(closest.road_mi!)} away${closest.mode === 'walk' ? ', close enough to walk' : ''}.`);
