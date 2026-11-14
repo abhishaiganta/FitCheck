@@ -34,14 +34,19 @@ on conflict (listing_id) do nothing
 returning listing_id
 """
 
-# A listing that got pinned after it fell back to a generic model deserves a real one.
-UPGRADE_PINNED = """
+# A listing that got pinned after it fell back to a generic model deserves a real one. Providers are often
+# busy or out of free quota at that moment, so retry every 30 min, at most MAX_UPGRADES times.
+MAX_UPGRADES = 6
+UPGRADE_PINNED = f"""
 update assets a set status = 'gen_pending', provider = null, provider_job = null, attempts = 0,
-       gen_state = coalesce(a.gen_state, '{}'::jsonb) - 'tried' || '{"upgrade": true}'::jsonb,
+       gen_state = coalesce(a.gen_state, '{{}}'::jsonb) - 'tried'
+                   || jsonb_build_object('upgrade', true, 'upgrades', coalesce((a.gen_state->>'upgrades')::int, 0) + 1),
        next_attempt_at = null, updated_at = now() - interval '1 hour'
 from listings l
 where l.id = a.listing_id and l.demo_pin and a.status = 'fallback_ready' and a.provider = 'generic'
-  and a.cutout_url is not null and not coalesce((a.gen_state->>'upgrade')::boolean, false)
+  and a.cutout_url is not null
+  and coalesce((a.gen_state->>'upgrades')::int, case when (a.gen_state->>'upgrade')::boolean then 1 else 0 end) < {MAX_UPGRADES}
+  and (not coalesce((a.gen_state->>'upgrade')::boolean, false) or a.updated_at < now() - interval '30 minutes')
 returning a.listing_id
 """
 

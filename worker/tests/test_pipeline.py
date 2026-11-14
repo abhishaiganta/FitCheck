@@ -233,6 +233,28 @@ def test_real_3d_is_reserved_for_pinned_listings_and_upgrades_later(ctx, monkeyp
     assert ctx.providers[0].submitted == 1
 
 
+def test_pinned_fallback_is_retried_later_but_not_forever(ctx, monkeypatch):
+    from worker.stages import select
+    monkeypatch.setenv("REAL_3D_FOR", "pinned")
+    seed(ctx)
+    run_until_settled(ctx)
+    lid = ctx.db.one("select min(listing_id) id from assets")["id"]
+    ctx.db.x("update listings set demo_pin = true where id = %s", (lid,))
+    # every real provider was busy: it fell back again right after the first upgrade
+    ctx.db.x("""update assets set status = 'fallback_ready', provider = 'generic',
+                gen_state = '{"upgrade": true, "upgrades": 1}'::jsonb, updated_at = now() where listing_id = %s""", (lid,))
+    select.run(ctx)
+    assert ctx.db.one("select status from assets where listing_id = %s", (lid,))["status"] == "fallback_ready"  # too soon
+    ctx.db.x("update assets set updated_at = now() - interval '31 minutes' where listing_id = %s", (lid,))
+    select.run(ctx)
+    a = ctx.db.one("select status, gen_state from assets where listing_id = %s", (lid,))
+    assert a["status"] == "gen_pending" and a["gen_state"]["upgrades"] == 2
+    ctx.db.x("""update assets set status = 'fallback_ready', provider = 'generic', updated_at = now() - interval '2 hours',
+                gen_state = '{"upgrade": true, "upgrades": 6}'::jsonb where listing_id = %s""", (lid,))
+    select.run(ctx)
+    assert ctx.db.one("select status from assets where listing_id = %s", (lid,))["status"] == "fallback_ready"  # gave up
+
+
 def test_exporter_rejection_moves_to_next_provider(ctx):
     """A provider GLB that parses but has no meshes passes gen and is rejected by the exporter."""
     seed(ctx)
