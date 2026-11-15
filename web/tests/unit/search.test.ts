@@ -122,9 +122,10 @@ describe('hybrid search SQL (fixture database)', () => {
     expect(await run({ max_total_usd: 0.01, ships_only: true })).toEqual([]);
   });
 
-  it('flags approx dims and approx models', async () => {
+  it('flags approx dims and never returns generic stand-in models', async () => {
     const cards = await run({ max_distance_mi: 30 });
-    expect(cards.find((c) => c.id === 5)).toMatchObject({ is_approx_model: true, asset_status: 'fallback_ready' });
+    expect(cards.find((c) => c.id === 5)).toBeUndefined();          // fallback_ready generic model: not shown
+    expect(cards.every((c) => c.has_model && !c.is_approx_model)).toBe(true);
     expect(cards.find((c) => c.id === 3)!.dims_approx).toBe(true); // estimated
     expect(cards.find((c) => c.id === 7)!.dims_approx).toBe(false); // from listing text, model matches
   });

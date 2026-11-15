@@ -54,6 +54,29 @@ if (after > maxTris * 1.15) {      // simplify stops early on very noisy scans: 
   await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: maxTris / after, error: 0.05 }), prune());
   after = triangles(doc);
 }
+if (after > maxTris * 1.15) {
+  // Many UV seams (a woven wicker texture split into thousands of islands) block normal edge collapses.
+  // Permissive mode may collapse across seams but still weighs texture coordinates, so the texture survives.
+  const ratio = maxTris / after;
+  for (const mesh of doc.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) {
+    if (prim.getMode() !== 4) continue;
+    const posAcc = prim.getAttribute('POSITION');
+    const n = posAcc.getCount();
+    const positions = new Float32Array(n * 3);
+    const el = [0, 0, 0];
+    for (let i = 0; i < n; i++) { posAcc.getElement(i, el); positions.set(el, i * 3); }
+    let idx = prim.getIndices();
+    const indices = idx ? Uint32Array.from(idx.getArray()) : Uint32Array.from({ length: n }, (_, i) => i);
+    const target = Math.max(3, Math.floor((indices.length * ratio) / 3) * 3);
+    const [out] = MeshoptSimplifier.simplify(indices, positions, 3, target, 0.05, ['Permissive']);
+    if (!out.length) continue;
+    if (!idx) { idx = doc.createAccessor().setType('SCALAR').setBuffer(doc.getRoot().listBuffers()[0]); prim.setIndices(idx); }
+    idx.setArray(n > 65535 ? out : Uint16Array.from(out));
+    compactPrimitive(prim);
+  }
+  await doc.transform(prune());
+  after = triangles(doc);
+}
 let sloppy = false;
 if (after > maxTris * 1.15) {
   // Still over budget: the mesh is cut into many UV islands / flat-shaded faces, so edge collapses are blocked

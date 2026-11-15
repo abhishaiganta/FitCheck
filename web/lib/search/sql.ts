@@ -51,7 +51,7 @@ base as (
       / greatest(cardinality($9::text[]), 1) as kw_sim
   from listings l
   join listing_details d on d.listing_id = l.id
-  join assets a on a.listing_id = l.id and a.status in ('ready', 'fallback_ready')
+  join assets a on a.listing_id = l.id and a.status = 'ready' and not coalesce(a.is_approx_model, false)
   ${BASELINE_JOIN}
   where l.is_active and l.price_usd is not null
     and (cardinality($3::text[]) = 0 or d.category = any($3::text[]))
@@ -132,7 +132,7 @@ export async function searchListingsSql(
 
 /** Raw items by id (any asset status) for /item/[id], the agent tools and the snapshot builder. */
 export async function fetchRawItems(ids: number[] | 'all-with-models', branch: Branch = readBranch()): Promise<RawItem[]> {
-  const where = ids === 'all-with-models' ? `a.status in ('ready','fallback_ready') and l.is_active` : `l.id = any($1::bigint[])`;
+  const where = ids === 'all-with-models' ? `a.status = 'ready' and not coalesce(a.is_approx_model, false) and l.is_active` : `l.id = any($1::bigint[])`;
   const rows = await query(
     `select ${ITEM_COLUMNS}, nb.median_usd::float8 as baseline_usd
        from listings l
