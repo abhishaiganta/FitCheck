@@ -4,6 +4,15 @@ Paste this into a new Claude session together with README.md, NOTES.md and web/N
 
 ## State right now
 
+**BLOCKER (Sat 19:08): the Vercel Blob store is suspended ("store_suspended").** Every model, cutout and photo URL
+returns 403, so no 3D/AR loads on the live site, and the workers are stopped. Storage is only 0.55 GB / 2,158 files,
+so it is almost certainly the Hobby plan's monthly operations limit. Fix: upgrade the Vercel team to Pro (or start
+the Pro trial) in Vercel > Settings > Billing, then Storage > Blob shows the store active again. Nothing is lost.
+Then restart both workers (commands below). Person D's 3 models are matched and ready to import:
+`python -m scripts.import_model --id 2752 --glb "Downloads\model (1) (1).glb"` (wicker chair; if the USDZ is over
+15 MB use `--max-tris 40000`), `--id 2753 --glb "Downloads\model (1).glb"` (bookshelf), `--id 2754 --glb
+"Downloads\model (2).glb"` (carved table). The 2 eBay ones (desk, wardrobe) need the shipping-price rule relaxed.
+
 - Live site: https://liveroom-lac.vercel.app (Vercel project "liveroom", Root Directory `web`, builds from GitHub `main`).
   Env vars are set in Vercel (DB, Gemini, ElevenLabs, Blob, admin token, Bright Data).
 - Neon project misty-band-10705228 (default branch is called `production`). Blob store qs1nw3xcnxvisvzh.
@@ -28,6 +37,15 @@ Paste this into a new Claude session together with README.md, NOTES.md and web/N
 - Hand-made GLBs: `python -m scripts.import_model --id <listing id> --glb file.glb` (shrinks, uploads, pins, exports).
 
 ## Done this session (latest first)
+
+- MAIN FEATURE: cards only show 3D/AR for a model made from the listing's own photos (asset ready, not approx).
+  Generic stand-ins show the photo + "No 3D model of this one yet". Real models rank first.
+- TRELLIS (free, HF) is good when the cutout is clean (18, 87, 157, 104, 670, 760, 1201 look right). Bad ones were
+  cutout failures. 7 bad demo models + 17 newly pinned listings (lamps, nightstands, bookshelves, side tables,
+  coffee table, desk) were re-queued for BiRefNet cutout + real 3D.
+- Meshy credits are spent (10-25 left per key, a model costs 30). Each new free Meshy account = 100 credits = 3 models.
+  Add keys to MESHY_API_KEYS in worker/.env (comma separated) and restart worker B.
+- Person D's listing URLs: fetched + tagged via scripts/import_model (Craigslist single posts now supported).
 
 - Person D's bookshelf model (Downloads\model (1).glb) imported on listing 37 (gray staggered bookshelf).
 - The other Person D GLBs match NO listing in Neon (checked titles + photos). They are:
