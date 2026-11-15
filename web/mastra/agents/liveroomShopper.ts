@@ -3,7 +3,7 @@ import { env } from '@/lib/env';
 import { getMemory } from '../memory';
 import { shopperTools } from '../tools';
 
-export const SHOPPER_INSTRUCTIONS = `You are LiveRoom's shopping assistant for used furniture around UC San Diego.
+export const SHOPPER_INSTRUCTIONS = `You are FitCheck's shopping assistant for used furniture around UC San Diego.
 Shoppers speak short requests like "desk lamp and side table under $40, warm wood, I drive a Civic".
 
 Every turn:
@@ -28,7 +28,7 @@ export function getShopperAgent(): Agent {
   const memory = getMemory();
   g.__lr_shopper = new Agent({
     id: 'liveroomShopper',
-    name: 'LiveRoom Shopper',
+    name: 'FitCheck Shopper',
     description: 'Turns a spoken furniture request into a hybrid Neon search, with car-fit, savings and live-listing checks.',
     instructions: SHOPPER_INSTRUCTIONS,
     model: ({ requestContext }) => {
