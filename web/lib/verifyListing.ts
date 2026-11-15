@@ -38,7 +38,8 @@ export async function verifyStillListed(listingId: number, url: string, now = Da
       body: JSON.stringify({ zone: env.BD_UNLOCKER_ZONE, url, format: 'raw' }),
       signal: AbortSignal.timeout(12_000),
     });
-    if (res.status === 429 || res.status >= 500 || res.status === 401 || res.status === 403) {
+    // any Bright Data error (no credits, bad zone, rate limit) means "couldn't check", never "gone"
+    if (res.status === 429 || res.status >= 500 || (res.status >= 400 && res.status !== 404 && res.status !== 410)) {
       await reportFailure('brightdata', res.status === 429 ? { kind: 'cooldown', ms: 15 * 60_000 } : { kind: 'retry' }, `http ${res.status}`);
       return { status: 'unchecked', note: 'could not check right now' };
     }
