@@ -121,6 +121,12 @@ def _poll_running(ctx: Ctx, by_name: dict[str, Provider]) -> tuple[int, dict[str
             except ValueError as e:              # invalid GLB -> next provider
                 ctx.limits.failure(ledger)
                 _provider_failed(ctx, asset, pname, f"invalid GLB: {e}")
+        elif res.state == "failed" and (res.error or "").startswith("job lost"):
+            # in-process job (HF) lost to a worker restart: not the provider's fault, submit it again
+            db.x("""update assets set provider = null, provider_job = null, locked_by = null, locked_at = null,
+                    gen_state = coalesce(gen_state, '{}'::jsonb) - 'started_at', updated_at = now()
+                    where listing_id = %s""", (lid,))
+            db.event(lid, asset["status"], asset["status"], f"{pname} job lost in a worker restart: resubmitting")
         elif res.state == "failed":
             ctx.limits.failure(ledger)
             _provider_failed(ctx, asset, pname, res.error or "job failed")

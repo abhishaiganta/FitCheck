@@ -94,6 +94,9 @@ class FakeProvider(Provider):
             return PollResult("done", glb=b"this is not a glb")
         if outcome == "fail":
             return PollResult("failed", error="mock failure")
+        if outcome == "lost":
+            self.jobs[job_id] = "ok"                     # only the first poll loses it
+            return PollResult("failed", error="job lost (worker restarted)")
         return PollResult("running")
 
 
@@ -253,6 +256,16 @@ def test_pinned_fallback_is_retried_later_but_not_forever(ctx, monkeypatch):
                 gen_state = '{"upgrade": true, "upgrades": 6}'::jsonb where listing_id = %s""", (lid,))
     select.run(ctx)
     assert ctx.db.one("select status from assets where listing_id = %s", (lid,))["status"] == "fallback_ready"  # gave up
+
+
+def test_job_lost_in_a_restart_is_resubmitted_to_the_same_provider(ctx):
+    seed(ctx)
+    ctx.db.x("delete from listings where id <> (select min(id) from listings)")
+    hf = FakeProvider("hf", ["lost", "ok"])
+    ctx._providers = [hf, FakeProvider("meshy", ["ok"])]
+    a = list(run_until_settled(ctx).values())[0]
+    assert (a["provider"], a["status"]) == ("hf", "ready")          # not handed to meshy, not the generic model
+    assert hf.submitted == 2 and ctx._providers[1].submitted == 0
 
 
 def test_exporter_rejection_moves_to_next_provider(ctx):
