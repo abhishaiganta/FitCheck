@@ -1,4 +1,4 @@
-# LiveRoom
+# FitCheck
 
 See real second-hand furniture from Craigslist, Facebook Marketplace and eBay in your own room, in AR on your
 phone, before you drive across town for it. Buying used keeps furniture out of landfill, and the AR model
