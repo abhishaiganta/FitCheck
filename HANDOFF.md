@@ -4,7 +4,7 @@ Paste this into a new Claude session together with README.md, NOTES.md and web/N
 
 ## State right now
 
-**BLOCKER (Sat 19:08): the Vercel Blob store is suspended ("store_suspended").** Every model, cutout and photo URL
+**RESOLVED 19:40 (Vercel upgraded to Pro).** Was: BLOCKER (Sat 19:08): the Vercel Blob store is suspended ("store_suspended").** Every model, cutout and photo URL
 returns 403, so no 3D/AR loads on the live site, and the workers are stopped. Storage is only 0.55 GB / 2,158 files,
 so it is almost certainly the Hobby plan's monthly operations limit. Fix: upgrade the Vercel team to Pro (or start
 the Pro trial) in Vercel > Settings > Billing, then Storage > Blob shows the store active again. Nothing is lost.
@@ -37,6 +37,16 @@ Then restart both workers (commands below). Person D's 3 models are matched and 
 - Hand-made GLBs: `python -m scripts.import_model --id <listing id> --glb file.glb` (shrinks, uploads, pins, exports).
 
 ## Done this session (latest first)
+
+- Search and the corner workflow return ONLY listings with a real model (no stand-ins, no "no model" cards).
+  Real models (QA'd against photos, previews/demo_models_check.jpg): accent chairs 87 670 2752, bookshelves 37 2753
+  1117, coffee table 93, desk lamps 126 2134 459, dining chair 1665, floor lamp 1507, nightstand 1145, ottoman 104,
+  side tables 18 1060 2754 1, stool 157. Rejected in QA (status failed): 143 (nightstand baked in), 2197 (wrong color).
+- Homepage examples: 'desk lamp and side table under $40, warm wood', 'bookshelf under $60',
+  'something to sit on under $50' (all return full rows).
+- Gaps (pinned, waiting for credits): desk 776, floor lamp 2136, desk lamp 291, nightstands 70 109, bookshelves 41
+  2275, side tables 25 271 1500, coffee table 1195. HF free quota (3/token/day, 24 h window) is used up for today;
+  Meshy is out. New Meshy keys -> add to MESHY_API_KEYS, restart worker B, reset these to gen_pending.
 
 - MAIN FEATURE: cards only show 3D/AR for a model made from the listing's own photos (asset ready, not approx).
   Generic stand-ins show the photo + "No 3D model of this one yet". Real models rank first.
