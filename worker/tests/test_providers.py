@@ -268,3 +268,18 @@ def test_is_gone():
     assert is_gone({"error": "This content isn't available right now", "error_code": "dead_page"})
     assert is_gone({"is_sold": True})
     assert not is_gone({"title": "Side table", "is_sold": False})
+
+
+def test_meshy_flattens_transparent_cutouts_onto_gray():
+    import io
+
+    from PIL import Image
+
+    from worker.providers.meshy import MESHY_BG, flatten
+    im = Image.new("RGBA", (20, 20), (0, 0, 0, 0))
+    im.paste((255, 255, 255, 255), (5, 5, 15, 15))                  # a white object on transparency
+    buf = io.BytesIO()
+    im.save(buf, "PNG")
+    out = Image.open(io.BytesIO(flatten(buf.getvalue())))
+    assert out.mode == "RGB" and out.getpixel((0, 0)) == MESHY_BG and out.getpixel((10, 10)) == (255, 255, 255)
+    assert flatten(b"not an image") == b"not an image"

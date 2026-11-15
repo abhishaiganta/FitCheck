@@ -5,6 +5,7 @@ furniture in the background, which the 3D providers turned into missing parts an
 CUTOUT_MODEL overrides the rembg model (birefnet-general-lite: ~20 s per photo on a laptop CPU)."""
 from __future__ import annotations
 
+import hashlib
 import io
 import logging
 import os
@@ -127,7 +128,8 @@ def process_one(ctx: Ctx, asset: dict) -> None:
                 raise                                 # the main photo must work (a transient download error is retried)
             log.info("listing %s: dropping extra view %s: %s", lid, idx, e)
             continue
-        url = ctx.storage.put(f"cutout/{lid}-{idx}.png", png, "image/png")
+        # content hash in the name: a re-cut gets a new URL, so the 1-year CDN cache never serves the old cutout
+        url = ctx.storage.put(f"cutout/{lid}-{idx}-{hashlib.sha1(png).hexdigest()[:10]}.png", png, "image/png")
         views_used.append({"photo_idx": idx, "angle": v["angle"], "url": url, "coverage": round(cov, 3)})
         if idx == best:
             best_cutout = url

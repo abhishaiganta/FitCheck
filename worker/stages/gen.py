@@ -10,6 +10,7 @@ else gets the generic model right away and is upgraded automatically if it is pi
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from datetime import datetime, timezone
@@ -56,7 +57,8 @@ def _provider_failed(ctx: Ctx, asset: dict, provider: str, reason: str) -> None:
 def _finish(ctx: Ctx, asset: dict, provider: str, glb: bytes, approx: bool, note: str) -> None:
     lid = asset["listing_id"]
     info = inspect_glb(glb)                      # raises ValueError on an invalid GLB
-    url = ctx.storage.put(f"glb/{lid}-raw-{provider}.glb", glb, GLB_MIME)
+    # content hash in the name: a regenerated model gets a new URL, so the CDN never serves the previous one
+    url = ctx.storage.put(f"glb/{lid}-raw-{provider}-{hashlib.sha1(glb).hexdigest()[:10]}.glb", glb, GLB_MIME)
     state = _state(asset)
     state.update(raw_glb_url=url, raw_info=info)
     state.pop("started_at", None)

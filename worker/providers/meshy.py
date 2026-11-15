@@ -10,6 +10,7 @@ A textured image-to-3D task costs 30 credits (docs.meshy.ai/en/api/pricing, Nov 
 from __future__ import annotations
 
 import base64
+import io
 import os
 
 import httpx
@@ -34,8 +35,29 @@ def _err(r: httpx.Response) -> ProviderError:
     return classify_http(r.status_code, str(msg), r.headers.get("retry-after"), "meshy")
 
 
+# Meshy runs its own background removal and composites transparent pixels onto white first, so a white chair
+# back on a transparent cutout vanished. Flatten onto mid gray: it contrasts with white and black items alike.
+MESHY_BG = (128, 128, 128)
+
+
+def flatten(png: bytes, bg: tuple[int, int, int] = MESHY_BG) -> bytes:
+    from PIL import Image
+    try:
+        im = Image.open(io.BytesIO(png))
+        if im.mode not in ("RGBA", "LA", "PA") and "transparency" not in im.info:
+            return png
+        im = im.convert("RGBA")
+    except Exception:  # noqa: BLE001 - not an image we can read: send it as is and let Meshy judge
+        return png
+    out = Image.new("RGB", im.size, bg)
+    out.paste(im, mask=im.getchannel("A"))
+    buf = io.BytesIO()
+    out.save(buf, "PNG", optimize=True)
+    return buf.getvalue()
+
+
 def data_uri(png: bytes) -> str:
-    return "data:image/png;base64," + base64.b64encode(png).decode()
+    return "data:image/png;base64," + base64.b64encode(flatten(png)).decode()
 
 
 class Meshy(Provider):
