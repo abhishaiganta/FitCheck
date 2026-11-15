@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { PostElsewhere } from '@/components/PostElsewhere';
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { categoryFromText, isCategory, type Category } from '@/lib/logic/categories';
 
@@ -7,7 +8,7 @@ type Price = { source: 'comps' | 'estimate' | null; comparables: number; suggest
 type Draft = {
   id: number; status: 'new' | 'processing' | 'ready' | 'failed'; category: string | null; title: string | null;
   height_in: number; ask_usd: number | null; fair_price_usd: number | null; fair_low_usd: number | null; fair_high_usd: number | null;
-  comps_n: number | null; error: string | null; item: string | null; price_source: 'comps' | 'estimate' | null; price_basis: string | null; listing_id: number | null; published: boolean;
+  comps_n: number | null; error: string | null; item: string | null; photo_url: string | null; price_source: 'comps' | 'estimate' | null; price_basis: string | null; listing_id: number | null; published: boolean;
   asset_status: string | null; usdz_url: string | null; glb_url: string | null; is_approx_model: boolean;
   w_in: number | null; d_in: number | null; h_in: number | null;
 };
@@ -332,9 +333,15 @@ export default function SellPage() {
                 <p className="mt-4 text-muted">We couldn&apos;t suggest a price for this one. Set your own below.</p>
               )}
               {draft.published ? (
-                <p className="mt-4 rounded-lg bg-paper px-3 py-2 font-semibold">
-                  Live at ${draft.ask_usd}. <Link className="underline" href={`/item/${draft.listing_id}`}>Open your listing</Link> to share its QR code.
-                </p>
+                <>
+                  <p className="mt-4 rounded-lg bg-paper px-3 py-2 font-semibold">
+                    Live at ${draft.ask_usd}. <Link className="underline" href={`/item/${draft.listing_id}`}>Open your listing</Link> to share its QR code.
+                  </p>
+                  {draft.listing_id != null && (
+                    <PostElsewhere listingId={draft.listing_id} title={draft.title || draft.item || 'Item for sale'} priceUsd={Number(draft.ask_usd ?? 0)}
+                      photoUrl={draft.photo_url} w={draft.w_in} d={draft.d_in} h={draft.h_in} item={draft.item} />
+                  )}
+                </>
               ) : (
                 <div className="mt-4 flex flex-wrap items-end gap-3">
                   <label className="block font-semibold">Your price ($)
