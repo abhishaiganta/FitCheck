@@ -9,7 +9,7 @@ import { readBranch } from '../lib/db';
 async function main() {
   try { process.loadEnvFile?.('.env.local'); } catch { /* optional */ }
   const branch = readBranch();
-  const [items, cars] = await Promise.all([fetchRawItems('all-with-models', branch), fetchCars(branch)]);
+  const [items, cars] = await Promise.all([fetchRawItems('all-active', branch), fetchCars(branch)]);
   const fixture = (process.env.DATABASE_URL ?? '').startsWith('pglite:');
   const pinned = items.filter((i) => i.demo_pin);
   const chosen = (pinned.length >= 8 ? pinned : items).slice(0, 60);

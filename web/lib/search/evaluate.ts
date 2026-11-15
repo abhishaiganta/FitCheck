@@ -9,7 +9,7 @@ import type { Origin } from '../logic/geo';
 import type { SearchArgs } from './schema';
 import type { Card, RawItem } from './types';
 
-export const RESULT_LIMIT = 8;
+export const RESULT_LIMIT = 24;
 export const DEMO_PIN_BOOST = 0.15;
 /** A model made from the listing's own photos beats a generic stand-in of similar relevance. */
 export const REAL_MODEL_BOOST = 0.25;
@@ -93,7 +93,7 @@ export function evaluate(
     : null;
   const pool = items
     .filter((r) => r.is_active && r.price != null)
-    .filter((r) => (opts.requireModel ?? true) ? r.asset_status === 'ready' && !r.is_approx_model : true)   // every result can be placed in AR
+    .filter((r) => (opts.requireModel ?? false) ? r.asset_status === 'ready' && !r.is_approx_model : true)   // all matches; real 3D ranks first
     .filter((r) => !f.categories.length || (f.categories as string[]).includes(r.category))
     .filter((r) => !f.free_only || r.price === 0)
     .filter((r) => (f.max_w_in == null || (r.w ?? 0) <= f.max_w_in) && (f.max_d_in == null || (r.d ?? 0) <= f.max_d_in) && (f.max_h_in == null || (r.h ?? 0) <= f.max_h_in))

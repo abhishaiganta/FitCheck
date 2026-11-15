@@ -129,7 +129,9 @@ export function ListingCard({ card: c, carAsked, carUnknown, modelBroken, large 
           ) : c.has_model && c.glb_url ? (
             <button className="btn btn-tape" onClick={() => setPreview(true)}>Open 3D preview</button>
           ) : (
-            <p className="badge justify-center !py-3 text-sm" data-testid="model-coming">No 3D model of this one yet</p>
+            <p className="badge justify-center gap-2 !py-3 text-sm" data-testid="model-coming">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-tape" aria-hidden />3D model in the works
+            </p>
           )}
           <div className="flex flex-wrap gap-2">
             {hasAr && c.glb_url && <button className="btn btn-quiet flex-1 whitespace-nowrap !px-2 text-sm" onClick={() => setPreview(true)}>3D preview</button>}

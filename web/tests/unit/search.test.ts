@@ -18,20 +18,20 @@ beforeAll(() => {
 });
 
 describe('hybrid search SQL (fixture database)', () => {
-  it('only returns items whose 3D model is ready', async () => {
+  it('returns every match, with or without a 3D model yet', async () => {
     const cards = await run({});
     expect(cards.length).toBeGreaterThan(0);
-    expect(cards.length).toBeLessThanOrEqual(8);
+    expect(cards.length).toBeLessThanOrEqual(24);
+    expect(cards.some((c) => !c.has_model)).toBe(true);           // listings still waiting for a model are shown too
     for (const c of cards) {
-      expect(['ready', 'fallback_ready']).toContain(c.asset_status);
       // AR only for a model made from the listing's photos; a generic stand-in is listed without AR
       expect(c.has_model).toBe(c.asset_status === 'ready' && !c.is_approx_model);
       if (c.has_model) expect(c.ar_href).toMatch(/^https:\/\/.+\.usdz#allowsContentScaling=0&callToAction=View%20listing&checkoutTitle=/);
       else expect(c.ar_href).toBeNull();
     }
     expect(cards.some((c) => c.has_model)).toBe(true);
-    expect(cards.map((c) => c.id)).not.toContain(9); // exporting
-    expect(cards.map((c) => c.id)).not.toContain(12); // failed
+    expect(cards.find((c) => c.id === 9)?.has_model).toBe(false); // still exporting: listed, model in the works
+    expect(cards.find((c) => c.id === 12)?.has_model).toBe(false); // generation failed: listed without a model
   });
 
   it('the rehearsed demo query returns lamps and a side table, all under budget', async () => {
@@ -77,7 +77,7 @@ describe('hybrid search SQL (fixture database)', () => {
   it('pickup only hides shipped-only items; ships_only hides pickups', async () => {
     expect((await run({ ships_ok: false })).every((c) => c.mode === 'pickup')).toBe(true);
     const shipped = await run({ ships_only: true });
-    expect(shipped.length).toBe(2);
+    expect(shipped.length).toBe(3);
     expect(shipped.every((c) => c.mode === 'ship')).toBe(true);
   });
 
@@ -122,22 +122,23 @@ describe('hybrid search SQL (fixture database)', () => {
     expect(await run({ max_total_usd: 0.01, ships_only: true })).toEqual([]);
   });
 
-  it('flags approx dims and never returns generic stand-in models', async () => {
+  it('flags approx dims and never offers AR on a generic stand-in model', async () => {
     const cards = await run({ max_distance_mi: 30 });
-    expect(cards.find((c) => c.id === 5)).toBeUndefined();          // fallback_ready generic model: not shown
-    expect(cards.every((c) => c.has_model && !c.is_approx_model)).toBe(true);
+    const generic = cards.find((c) => c.id === 5)!;                // fallback_ready generic model: listed, no AR
+    expect(generic.has_model).toBe(false);
+    expect(generic.ar_href).toBeNull();
     expect(cards.find((c) => c.id === 3)!.dims_approx).toBe(true); // estimated
     expect(cards.find((c) => c.id === 7)!.dims_approx).toBe(false); // from listing text, model matches
   });
 
   it('inactive listings disappear', async () => {
     await query('update listings set is_active = false where id = 6');
-    expect((await run({ ships_only: true })).map((c) => c.id)).toEqual([2]);
+    expect((await run({ ships_only: true })).map((c) => c.id).sort((a, b) => a - b)).toEqual([2, 10]);
     await query('update listings set is_active = true where id = 6');
   });
 
   it('the TypeScript evaluator (offline snapshot path) matches SQL on ids, totals and modes', async () => {
-    const [items, cars] = await Promise.all([fetchRawItems('all-with-models', 'main'), fetchCars('main')]);
+    const [items, cars] = await Promise.all([fetchRawItems('all-active', 'main'), fetchCars('main')]);
     for (const raw of [
       {}, { categories: ['desk_lamp', 'side_table'], max_total_usd: 40, style_text: 'warm wood', car_make_model: 'Honda Civic' },
       { has_car: false }, { ships_only: true }, { max_distance_mi: 30, car_make_model: 'Toyota RAV4' }, { free_only: true },
