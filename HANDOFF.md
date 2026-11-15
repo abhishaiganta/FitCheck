@@ -20,7 +20,7 @@ Then restart both workers (commands below). Person D's 3 models are matched and 
 - The Python worker runs on Abhi's laptop as two processes (must stay running; Vercel does not run it):
   ```
   .venv\Scripts\python -m worker.run --loop --stages scrape,tag
-  .venv\Scripts\python -m worker.run --loop --stages seller,select,cutout,gen,export,sets
+  .venv\Scripts\python -m worker.run --loop --stages seller,select,cutout,gen,export
   ```
   Logs: `worker/.cache/worker_tag.log`, `worker/.cache/worker_run.log`.
 - Tests: `python -m pytest worker/tests` (needs `node scripts/localpg/server.mjs 54329 memory` and

@@ -16,8 +16,7 @@
     "snapshot": "tsx scripts/build-snapshot.ts",
     "live-check": "tsx scripts/live-check.ts",
     "test:e2e:broken-db": "E2E_BROKEN_DB=1 playwright test",
-    "studio": "mastra dev --dir mastra",
-    "corner-check": "tsx scripts/corner-check.ts"
+    "studio": "mastra dev --dir mastra"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

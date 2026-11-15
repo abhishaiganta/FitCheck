@@ -66,12 +66,7 @@ npm run snapshot         # rebuild lib/data/demo_snapshot.json from the branch t
 
 ## Added after the merge (Person A, Nov 14)
 
-- **/corner + `POST /api/corner`, `GET /api/corner/[id]`**: Mastra workflow `furnishCorner`
-  (`mastra/workflows/furnishCorner.ts`, registered in `mastra/index.ts`). It plans the categories (`lib/corner.ts`),
-  then runs `executeSearch` per category in parallel (the same SQL, totals and distances as the cards) and picks one
-  item per category within the combined budget. It queues a `sets` row; the worker arranges the items and builds one
-  USDZ/GLB. Gemini parsing is capped at 6 s, then the keyword parser takes over. Live: ~1 to 2 s per plan.
-  `npm run corner-check` runs it against Neon without queueing.
+- **Corner (/corner, furnishCorner workflow) was removed on Nov 14**: the team chose to focus on search + sell.
 - **/sell is live end to end**: `POST /api/seller/draft` (photo shrunk in the browser, uploaded to Blob, `seller_drafts`
   row with an edit token), `GET /api/seller/draft/[id]` to poll, `POST /api/seller/draft/[id]` `{token, ask_usd}` to
   publish. The worker makes the hidden `liveroom` listing, a real 3D model (free HF TRELLIS first) and a fair price;

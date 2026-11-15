@@ -56,7 +56,7 @@ Fill in the values in `worker\.env` after copying it, and never commit it.
 
 `python -m scripts.migrate` applies `db/001`, `003`, `004` and `005`. It is idempotent.
 
-The worker's default stages are `seller,scrape,tag,select,cutout,gen,export,sets`.
+The worker's default stages are `seller,scrape,tag,select,cutout,gen,export`.
 
 | Command | What it does |
 |---|---|
@@ -92,7 +92,7 @@ To keep tagging from holding up model building, run it as two processes:
 
 ```bash
 python -m worker.run --loop --stages scrape,tag
-python -m worker.run --loop --stages seller,select,cutout,gen,export,sets
+python -m worker.run --loop --stages seller,select,cutout,gen,export
 ```
 
 ## The 3D pipeline

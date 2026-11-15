@@ -23,7 +23,7 @@ STAGES = {
     "gen": gen.run, "export": export.run, "verify": verify.run,
     "seller": seller.run, "sets": sets.run,
 }
-DEFAULT = "seller,scrape,tag,select,cutout,gen,export,sets"
+DEFAULT = "seller,scrape,tag,select,cutout,gen,export"
 log = logging.getLogger("worker")
 
 
