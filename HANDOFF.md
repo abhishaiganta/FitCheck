@@ -96,3 +96,15 @@ Then restart both workers (commands below). Person D's 3 models are matched and 
    30 credits each). When Meshy credits run out, HF TRELLIS still benefits from the better cutout.
 3. Pick more demo items with clean photos (`python -m scripts.curate candidates`, `pin <ids>`).
 4. Test AR on a real iPhone; optional demo branch (`python -m scripts.branch_demo`).
+
+## Sell: any item, Nov 14 evening
+- "What is it?" is a free-text field now (was a dropdown). The photo-sizing step fills it in ("water bottle").
+  Text that matches our furniture words maps to a category (`categoryFromText`); anything else is `other`.
+- Size: the photo estimate's width/depth go on the draft (`seller_drafts.w_in/d_in`, migration 006) and are kept in
+  proportion to the seller's height. A bottle stays ~3 x 3 x 10 in.
+- Price (`web/lib/seller/price.ts`): known furniture with >= 3 local comps -> comps as before. Anything else, or too
+  few comps -> Gemini used-price estimate, labelled "Estimated from typical used prices". Priced when the draft is
+  created; the worker keeps that price (`price_source` set).
+- 3D for sellers: `MESHY_SELLER_ONLY=1` (worker/.env) keeps Meshy credits for /sell items; buyer-side items use HF.
+  A seller's item never gets a generic stand-in: it waits for 3D capacity instead.
+  `MESHY_TARGET_POLYCOUNT=60000` for more detail. Credits: the new key 100 (3 models), old keys 15-25 (none usable).

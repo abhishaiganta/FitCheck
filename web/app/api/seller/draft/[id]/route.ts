@@ -17,7 +17,7 @@ async function draftId(ctx: Ctx) {
 const SELECT = `
   select sd.id::int as id, sd.status, sd.category, sd.title, sd.height_in::float8 as height_in, sd.ask_usd::float8 as ask_usd,
          sd.fair_price_usd::float8 as fair_price_usd, sd.fair_low_usd::float8 as fair_low_usd,
-         sd.fair_high_usd::float8 as fair_high_usd, sd.comps_n, sd.error, sd.photo_url,
+         sd.fair_high_usd::float8 as fair_high_usd, sd.comps_n, sd.error, sd.photo_url, sd.item, sd.price_source, sd.price_basis,
          sd.listing_id::int as listing_id, coalesce(l.is_active, false) as published,
          a.status::text as asset_status, a.usdz_url, a.glb_url, coalesce(a.is_approx_model, false) as is_approx_model,
          d.w_in::float8 as w_in, d.d_in::float8 as d_in, d.h_in::float8 as h_in

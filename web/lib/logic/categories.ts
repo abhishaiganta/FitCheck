@@ -40,3 +40,11 @@ export const CATEGORY_SYNONYMS: [RegExp, Category[]][] = [
 ];
 
 export const isCategory = (s: string): s is Category => (CATEGORIES as readonly string[]).includes(s);
+
+/** Free text ("old wicker armchair", "water bottle") -> our closest category, or null when nothing fits. */
+export function categoryFromText(text: string | null | undefined): Category | null {
+  const t = (text ?? '').toLowerCase();
+  if (!t.trim()) return null;
+  for (const [re, list] of CATEGORY_SYNONYMS) if (re.test(t)) return list[0];
+  return null;
+}

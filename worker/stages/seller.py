@@ -135,6 +135,10 @@ def start_draft(ctx: Ctx, d: dict) -> None:
 
     # the seller's own pick of category (from the /sell form) beats the tagger and the title guess
     chosen = d.get("category")
+    if chosen == "other" and d.get("item") and det["category"] != "other":
+        # the seller typed something outside our furniture list ("water bottle"): don't keep a furniture guess
+        db.x("update listing_details set category = 'other' where listing_id = %s", (lid,))
+        det = db.one("select * from listing_details where listing_id = %s", (lid,))
     if chosen in CATEGORY_ALLOWLIST and chosen != det["category"]:
         pw, pd, ph = priors().get(chosen, priors()["other"])
         db.x("update listing_details set category = %s, w_in = %s, d_in = %s, h_in = %s where listing_id = %s",
@@ -144,15 +148,23 @@ def start_draft(ctx: Ctx, d: dict) -> None:
     # the seller's height is the truth; keep the tagger's proportions for width and depth
     w, dd, h = (float(det[k]) if det[k] is not None else None for k in ("w_in", "d_in", "h_in"))
     k = height / h if h else None
+    w, dd = (round(w * k, 1) if (w and k) else None), (round(dd * k, 1) if (dd and k) else None)
+    if d.get("w_in") and d.get("d_in"):
+        # the /sell page sized it from the photo, already scaled to the seller's height
+        w, dd = round(float(d["w_in"]), 1), round(float(d["d_in"]), 1)
     db.x("""update listing_details set h_in = %s, w_in = %s, d_in = %s, dims_source = 'estimated', dims_from_text = false,
-            eligible_3d = true, photo_ok = true where listing_id = %s""",
-         (height, round(w * k, 1) if (w and k) else None, round(dd * k, 1) if (dd and k) else None, lid))
+            eligible_3d = true, photo_ok = true where listing_id = %s""", (height, w, dd, lid))
     try:
         embed_missing(ctx, limit=3)
     except Exception as e:  # noqa: BLE001 - search can embed it later
         log.info("seller draft %s: embedding skipped: %s", d["id"], e)
 
-    price = fair_price(ctx, det["category"], height)
+    if d.get("price_source"):
+        # the web already priced it when the draft was made (comps, or an estimate for items outside our categories)
+        price = {k: d.get(k) for k in ("fair_price_usd", "fair_low_usd", "fair_high_usd", "comps_n")}
+        price["comp_urls"] = d.get("comp_urls") or []
+    else:
+        price = fair_price(ctx, det["category"], height)
     db.x("""insert into assets (listing_id, status, updated_at) values (%s, 'queued', now() - interval '1 day')
             on conflict (listing_id) do nothing""", (lid,))
     db.event(lid, None, "queued", "seller draft: real 3D requested")

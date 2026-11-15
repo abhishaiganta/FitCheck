@@ -4,8 +4,9 @@ import { blobEnabled, blobPut } from '@/lib/blob';
 import { query } from '@/lib/db';
 import { env } from '@/lib/env';
 import { err, route } from '@/lib/errors';
-import { CATEGORIES } from '@/lib/logic/categories';
+import { categoryFromText, isCategory } from '@/lib/logic/categories';
 import { checkIpLimit } from '@/lib/ratelimit';
+import { sellerPrice, type Condition } from '@/lib/seller/price';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -41,8 +42,17 @@ export const POST = route('api.seller.draft', async (req: Request) => {
   const askRaw = String(form?.get('ask_usd') ?? '').trim();
   const ask = askRaw === '' ? null : Number(askRaw);
   if (ask != null && (!Number.isFinite(ask) || ask < 0 || ask > 100000)) throw err.badRequest('The asking price looks wrong.');
+  // "What is it?" is free text: "water bottle" stays 'other' with its own size and price, "armchair" maps to a category
+  const item = String(form?.get('item') ?? '').trim().toLowerCase().slice(0, 80) || null;
   const catRaw = String(form?.get('category') ?? '');
-  const category = (CATEGORIES as readonly string[]).includes(catRaw) ? catRaw : null;
+  const category = isCategory(catRaw) ? catRaw : categoryFromText(item ?? title);
+  const dim = (k: string) => { const v = Number(form?.get(k)); return Number.isFinite(v) && v > 0 && v < 200 ? Math.round(v * 10) / 10 : null; };
+  // the photo estimate's width and depth, kept in proportion if the seller changed the height
+  const estH = dim('est_h_in'), sk = estH ? height / estH : 1;
+  const w0 = dim('w_in'), d0 = dim('d_in');
+  const w = w0 ? Math.round(w0 * sk * 10) / 10 : null, d = d0 ? Math.round(d0 * sk * 10) / 10 : null;
+  const condRaw = String(form?.get('condition') ?? 'good');
+  const condition: Condition = condRaw === 'like_new' || condRaw === 'fair' ? condRaw : 'good';
   // a neighbourhood-level location only (rounded), never an address
   const lat = Number(form?.get('lat')), lng = Number(form?.get('lng'));
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && lat !== 0;
@@ -50,12 +60,15 @@ export const POST = route('api.seller.draft', async (req: Request) => {
 
   const token = randomBytes(16).toString('hex');
   const url = await blobPut(`seller/${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`, file, file.type);
+  const price = await sellerPrice({ item, category, condition, title, w_in: w, d_in: d, h_in: height });
   const [row] = await query<{ id: number }>(
-    `insert into seller_drafts (photo_url, height_in, title, ask_usd, category, city, lat, lng, edit_token)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id::int as id`,
-    [url, Math.round(height * 10) / 10, title, ask, category, city,
+    `insert into seller_drafts (photo_url, height_in, title, ask_usd, category, city, lat, lng, edit_token, item, w_in, d_in,
+                                fair_price_usd, fair_low_usd, fair_high_usd, comps_n, price_source, price_basis)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) returning id::int as id`,
+    [url, Math.round(height * 10) / 10, title, ask, category ?? 'other', city,
       hasCoords ? Math.round(lat * 100) / 100 : (city ? null : env.ORIGIN_LAT),
-      hasCoords ? Math.round(lng * 100) / 100 : (city ? null : env.ORIGIN_LNG), token],
+      hasCoords ? Math.round(lng * 100) / 100 : (city ? null : env.ORIGIN_LNG), token, item, w, d,
+      price.suggested_usd, price.low_usd, price.high_usd, price.comparables, price.source, price.basis],
     { branch: 'main' },
   );
   return NextResponse.json({ id: row.id, token, photo_url: url, status: 'new' });

@@ -1,13 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
-import { CATEGORIES, CATEGORY_LABEL, type Category } from '@/lib/logic/categories';
+import { categoryFromText, isCategory, type Category } from '@/lib/logic/categories';
 
-type Price = { comparables: number; suggested_usd: number | null; low_usd: number | null; high_usd: number | null; new_median_usd: number | null };
+type Price = { source: 'comps' | 'estimate' | null; comparables: number; suggested_usd: number | null; low_usd: number | null; high_usd: number | null; new_median_usd: number | null; basis: string | null };
 type Draft = {
   id: number; status: 'new' | 'processing' | 'ready' | 'failed'; category: string | null; title: string | null;
   height_in: number; ask_usd: number | null; fair_price_usd: number | null; fair_low_usd: number | null; fair_high_usd: number | null;
-  comps_n: number | null; error: string | null; listing_id: number | null; published: boolean;
+  comps_n: number | null; error: string | null; item: string | null; price_source: 'comps' | 'estimate' | null; price_basis: string | null; listing_id: number | null; published: boolean;
   asset_status: string | null; usdz_url: string | null; glb_url: string | null; is_approx_model: boolean;
   w_in: number | null; d_in: number | null; h_in: number | null;
 };
@@ -44,7 +44,8 @@ export default function SellPage() {
   const [file, setFile] = useState<File | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<Category>('side_table');
+  const [item, setItem] = useState('');
+  const [estCategory, setEstCategory] = useState<Category | null>(null);
   const [condition, setCondition] = useState<'like_new' | 'good' | 'fair'>('good');
   const [height, setHeight] = useState('');
   const [ask, setAsk] = useState('');
@@ -55,7 +56,7 @@ export default function SellPage() {
   const [auth, setAuth] = useState<{ id: number; token: string } | null>(null);
   const [mvReady, setMvReady] = useState(false);
   const [side, setSide] = useState<File | null>(null);
-  const [est, setEst] = useState<{ w_in: number; d_in: number; h_in: number; confidence: 'low' | 'medium' | 'high'; basis: string; views: number } | null>(null);
+  const [est, setEst] = useState<{ item: string | null; w_in: number; d_in: number; h_in: number; confidence: 'low' | 'medium' | 'high'; basis: string; views: number } | null>(null);
   const [measuring, setMeasuring] = useState(false);
   const [measureMsg, setMeasureMsg] = useState<string | null>(null);
   const measureRun = useRef(0);
@@ -99,7 +100,8 @@ export default function SellPage() {
       if (!res.ok) throw new Error(j?.error?.message ?? 'measure failed');
       setEst(j);
       setHeight(String(j.h_in));
-      if (j.category) setCategory(j.category as Category);
+      setEstCategory(j.category && isCategory(j.category) ? j.category : null);
+      if (j.item) setItem((t) => t || j.item);
       if (j.title) setTitle((t) => t || j.title);
     } catch {
       if (run !== measureRun.current) return;
@@ -119,10 +121,14 @@ export default function SellPage() {
     });
   };
 
+  // free text -> our closest furniture category (for local comps); anything else ("water bottle") prices on its own
+  const category: Category | null = categoryFromText(item) ?? (est?.item && item.trim().toLowerCase() === est.item ? estCategory : null);
+  const sizeFields = () => (est ? { w_in: est.w_in, d_in: est.d_in, h_in: Number(height) || est.h_in } : {});
+
   const suggest = async () => {
     setBusy(true); setMsg(null);
     try {
-      const res = await fetch('/api/seller/price', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ category, condition }) });
+      const res = await fetch('/api/seller/price', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ item: item.trim() || undefined, title: title.trim() || undefined, category: category ?? undefined, condition, ...sizeFields() }) });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error?.message ?? 'Could not get a price.');
       setPrice(j);
@@ -132,6 +138,7 @@ export default function SellPage() {
   const create = async () => {
     setMsg(null);
     if (!file) return setMsg('Add a photo of the item first.');
+    if (!item.trim() && !title.trim()) return setMsg('Say what it is, for example "floor lamp" or "water bottle".');
     const h = Number(height);
     if (!Number.isFinite(h) || h <= 0 || h >= 120) return setMsg('Enter how tall it is, in inches.');
     setBusy(true);
@@ -139,8 +146,11 @@ export default function SellPage() {
       const fd = new FormData();
       fd.set('photo', await shrinkPhoto(file), 'photo.jpg');
       fd.set('height_in', String(h));
-      fd.set('title', title || CATEGORY_LABEL[category][0]);
-      fd.set('category', category);
+      fd.set('title', title.trim() || item.trim());
+      fd.set('item', item.trim());
+      if (category) fd.set('category', category);
+      fd.set('condition', condition);
+      if (est) { fd.set('w_in', String(est.w_in)); fd.set('d_in', String(est.d_in)); fd.set('est_h_in', String(est.h_in)); }
       if (ask) fd.set('ask_usd', ask);
       const res = await fetch('/api/seller/draft', { method: 'POST', body: fd });
       const j = await res.json();
@@ -170,7 +180,7 @@ export default function SellPage() {
   const startOver = () => {
     localStorage.removeItem(STORE);
     if (timer.current) clearTimeout(timer.current);
-    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false); setEst(null); setSide(null); setHeight(''); setMeasureMsg(null);
+    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false); setEst(null); setSide(null); setHeight(''); setMeasureMsg(null); setItem(''); setTitle(''); setEstCategory(null); setPrice(null);
   };
 
   const inputCls = 'mt-1 block min-h-11 w-full rounded-[10px] border-[1.5px] border-ink px-3';
@@ -228,9 +238,8 @@ export default function SellPage() {
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block font-semibold">What is it?
-              <select value={category} onChange={(e) => setCategory(e.target.value as Category)} className="mt-1 block min-h-11 w-full rounded-[10px] border-[1.5px] border-ink bg-white px-2">
-                {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c][0]}</option>)}
-              </select>
+              <input value={item} onChange={(e) => { setItem(e.target.value); setPrice(null); }} placeholder="floor lamp, armchair, water bottle…"
+                maxLength={60} autoComplete="off" className={inputCls} />
             </label>
             <label className="block font-semibold">Condition
               <select value={condition} onChange={(e) => setCondition(e.target.value as typeof condition)} className="mt-1 block min-h-11 w-full rounded-[10px] border-[1.5px] border-ink bg-white px-2">
@@ -256,14 +265,12 @@ export default function SellPage() {
       {!auth && price && (
         <section className="panel mt-4 p-5" aria-live="polite">
           {price.suggested_usd == null ? (
-            <p className="font-semibold">No comparable {CATEGORY_LABEL[category][1]} are listed yet, so there is no price to suggest.</p>
+            <p className="font-semibold">We couldn&apos;t price that one right now. Say what it is above and try again.</p>
           ) : (
             <>
               <p className="text-muted">Price that should sell this week (estimate)</p>
               <p className="font-display text-6xl font-extrabold">${price.suggested_usd}</p>
-              <p className="mt-1 text-muted">
-                Quick sale ~${price.low_usd}, typical ${price.high_usd}, from {price.comparables} similar local listing{price.comparables === 1 ? '' : 's'} on Craigslist and Marketplace.
-              </p>
+              <p className="mt-1 text-muted">Quick sale ~${price.low_usd}, typical ${price.high_usd}. <PriceBasis source={price.source} basis={price.basis} n={price.comparables} /></p>
             </>
           )}
         </section>
@@ -277,7 +284,7 @@ export default function SellPage() {
               <p className="mt-1 text-muted">{STEP[draft?.status === 'processing' ? draft.asset_status ?? 'queued' : 'new'] ?? 'Working on it…'}</p>
               <div className="skeleton mt-4 h-3 w-full rounded-full" />
               {draft?.fair_price_usd != null && (
-                <p className="mt-4">Price that should sell (estimate): <b>${Math.round(draft.fair_price_usd)}</b> <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}, from {draft.comps_n} similar local listings)</span></p>
+                <p className="mt-4">Price that should sell (estimate): <b>${Math.round(draft.fair_price_usd)}</b> <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}. <PriceBasis source={draft.price_source} basis={draft.price_basis} n={draft.comps_n ?? 0} />)</span></p>
               )}
               <p className="mt-3 text-sm text-muted">Usually 1 to 3 minutes. You can leave this page open; it updates by itself.</p>
             </>
@@ -304,9 +311,9 @@ export default function SellPage() {
               {dims && <p className="mt-2 text-sm text-muted">True size: {dims}. On a phone, tap the AR button to place it in a room.</p>}
               {draft.fair_price_usd != null ? (
                 <p className="mt-4">Price that should sell (estimate): <b className="text-2xl">${Math.round(draft.fair_price_usd)}</b>{' '}
-                  <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}, from {draft.comps_n} similar local listings)</span></p>
+                  <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}. <PriceBasis source={draft.price_source} basis={draft.price_basis} n={draft.comps_n ?? 0} />)</span></p>
               ) : (
-                <p className="mt-4 text-muted">Not enough similar listings yet to suggest a price.</p>
+                <p className="mt-4 text-muted">We couldn&apos;t suggest a price for this one. Set your own below.</p>
               )}
               {draft.published ? (
                 <p className="mt-4 rounded-lg bg-paper px-3 py-2 font-semibold">
@@ -328,4 +335,10 @@ export default function SellPage() {
       )}
     </div>
   );
+}
+
+/** Where the suggested price comes from, in plain words. */
+function PriceBasis({ source, basis, n }: { source: 'comps' | 'estimate' | null; basis: string | null; n: number }) {
+  if (source === 'estimate') return <>Estimated from typical used prices{basis ? `: ${basis.replace(/\.$/, '')}` : ''}.</>;
+  return <>From {n} similar local listing{n === 1 ? '' : 's'} on Craigslist and Marketplace.</>;
 }

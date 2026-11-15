@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { err, route } from '@/lib/errors';
 import { estimateItemSize } from '@/lib/gemini';
-import { isCategory } from '@/lib/logic/categories';
+import { categoryFromText, isCategory } from '@/lib/logic/categories';
 import { checkIpLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export const POST = route('api.seller.measure', async (req: Request) => {
   }
   const est = await estimateItemSize(images);
   return NextResponse.json(
-    { ...est, category: est.category && isCategory(est.category) ? est.category : null, views: images.length },
+    { ...est, category: est.category && isCategory(est.category) ? est.category : categoryFromText(est.item), views: images.length },
     { headers: { 'cache-control': 'no-store' } },
   );
 });

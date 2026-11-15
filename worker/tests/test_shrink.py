@@ -43,9 +43,10 @@ def test_welded_textured_model_reaches_the_budget_and_keeps_its_texture():
     assert len(out) < len(src)
 
 
-def test_untextured_seam_heavy_model_uses_sloppy_fallback():
-    out, stats = shrink_glb(flat_vase(textured=False), max_tris=2000)
-    assert stats["sloppy"] and inspect_glb(out)["triangles"] <= 2000 * 1.3
+def test_untextured_seam_heavy_model_reaches_the_budget():
+    # the permissive pass (or, failing that, the sloppy one) gets a flat-shaded mesh under budget
+    out, _ = shrink_glb(flat_vase(textured=False), max_tris=2000)
+    assert inspect_glb(out)["triangles"] <= 2000 * 1.3
 
 
 def test_textured_seam_heavy_model_is_not_smeared():

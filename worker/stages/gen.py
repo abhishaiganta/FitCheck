@@ -161,7 +161,9 @@ def _start_one(ctx: Ctx, asset: dict, chain: list[Provider], busy: dict[str, set
     state = _state(asset)
     tried = set(state.get("tried", []))
     # demo pins and sellers' own items (source 'liveroom') always get real 3D
-    pinned = bool((db.one("select demo_pin or source = 'liveroom' as p from listings where id=%s", (lid,)) or {}).get("p"))
+    row = db.one("select demo_pin, source = 'liveroom' as seller from listings where id=%s", (lid,)) or {}
+    seller = bool(row.get("seller"))
+    pinned = bool(row.get("demo_pin")) or seller
     policy = real_3d_policy()
     if policy == "none" or (policy == "pinned" and not pinned):
         use_generic(ctx, asset, "real 3D is reserved for demo-pinned listings")
@@ -179,6 +181,9 @@ def _start_one(ctx: Ctx, asset: dict, chain: list[Provider], busy: dict[str, set
     waiting = False
     for provider in chain:
         if provider.name in tried:
+            continue
+        # MESHY_SELLER_ONLY=1 keeps scarce Meshy credits for sellers' own items on /sell
+        if provider.name == "meshy" and not seller and os.getenv("MESHY_SELLER_ONLY", "0") == "1":
             continue
         for _ in range(len(provider.keys)):
             try:
@@ -215,6 +220,13 @@ def _start_one(ctx: Ctx, asset: dict, chain: list[Provider], busy: dict[str, set
             break                                 # prefer waiting for a better provider over falling down the chain
     if waiting:
         state["tried"] = sorted(tried)
+        _save_state(ctx, lid, state, locked_by=None, locked_at=None)
+        return "wait"
+    if seller and len(tried) < len(chain):
+        # a seller is looking at their own item: a generic stand-in would not be it, so wait for capacity
+        if not state.get("seller_waiting"):
+            db.event(lid, "gen_pending", "gen_pending", "waiting for 3D capacity (seller item, no generic stand-in)")
+        state.update(tried=sorted(tried), seller_waiting=True)
         _save_state(ctx, lid, state, locked_by=None, locked_at=None)
         return "wait"
     asset["gen_state"] = {**state, "tried": sorted(tried)}
