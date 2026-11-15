@@ -176,7 +176,7 @@ export default function SellPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-4xl font-extrabold">Sell it instead of dumping it</h1>
+      <h1 className="text-4xl font-extrabold">Sell it. Don&apos;t dump it</h1>
       <p className="mt-2 text-lg text-muted">
         One clean photo. We size it for you, turn it into a true-size 3D model buyers can place in their room, and suggest a fair price from similar listings nearby.
       </p>
@@ -200,7 +200,7 @@ export default function SellPage() {
               <input type="file" accept="image/*" className="sr-only"
                 onChange={(e) => { const f = e.target.files?.[0] ?? null; if (!f) return; setFile(f); setPhoto(URL.createObjectURL(f)); setEst(null); void measure(f, side); e.target.value = ''; }} />
             </label>
-            <p className="mt-1 text-sm text-muted">For an accurate 3D model: the whole item in frame (legs included), shot from a slight corner angle at about its own height, nothing on top of it, plain wall or floor behind.</p>
+            <p className="mt-1 text-sm text-muted">For an accurate 3D model: the whole item in frame, nothing on top of it, plain wall or floor behind.</p>
           </div>
           {(measuring || est || measureMsg) && (
             <div className="rounded-xl border-[1.5px] border-line bg-paper p-3" aria-live="polite" data-testid="measure">
