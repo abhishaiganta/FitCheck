@@ -49,9 +49,9 @@ def export_one(ctx: Ctx, asset: dict) -> None:
                   dims_source="listing_text" if d["dims_from_text"] else "estimated",
                   orient_override=asset.get("orient_override"), yaw_deg=f(asset.get("yaw_override_deg")))
     approx = asset.get("provider") == "generic"
-    if asset.get("provider") == "hf" and not params["orient_override"]:
-        # TRELLIS always returns the object upright (y-up, from an upright photo). Guessed dimensions are not a
-        # good enough reason to turn it: a square side table "estimated" wider than tall got tipped on its side.
+    if asset.get("provider") in ("hf", "meshy") and not params["orient_override"]:
+        # TRELLIS and Meshy always return the object upright (y-up, from an upright photo). Guessed dimensions are
+        # not a good enough reason to turn it: a square side table "estimated" wider than tall got tipped on its side.
         params["orient_override"] = "identity"
     if approx:
         # our own generic models are built upright: never auto-rotate them, and stretch the footprint

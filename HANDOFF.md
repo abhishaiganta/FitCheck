@@ -43,7 +43,11 @@ Paste this into a new Claude session together with README.md, NOTES.md and web/N
   Same rule in worker/stages/seller.py and web/app/api/seller/price/route.ts. Existing drafts re-priced
   (white chair $85 -> $30). Sell page tells sellers how to shoot a photo that makes a good model.
 - Pipeline removed from the main nav (it is the judges' live board; still at /pipeline, linked from /impact).
-- Seller white chair (listing 1665) re-queued for Meshy (TRELLIS version was missing parts).
+- ROOT CAUSE of missing parts / floating fragments: the cutout (rembg u2net) cut away light parts against light
+  walls (the white chair back) and kept other furniture in the background. Now BiRefNet-lite (CUTOUT_MODEL) plus
+  keep_main_object() (drops mask pieces far from the main object). ~20 s per photo on CPU.
+- Meshy and TRELLIS outputs are never auto-rotated (both come out upright).
+- Seller white chair (listing 1665) re-cut and regenerated with Meshy.
 
 - Meshy keys added, Meshy first in the chain.
 - HF tokens 3 -> 8. TRELLIS models are never auto-rotated (they come out upright).
@@ -54,9 +58,7 @@ Paste this into a new Claude session together with README.md, NOTES.md and web/N
 ## Still to do (in order)
 
 1. Get the listing URLs for Person D's 5 unmatched GLBs (above) and import them.
-2. Check the Meshy regeneration of 1665 in worker_run.log / /admin; if it looks good, regenerate the weakest
-   TRELLIS demo models with Meshy too (reset the asset to gen_pending with gen_state.tried = ["hf"]; ~30 credits each,
-   ~340 credits left).
-3. Optional: drop stray floating fragments from generated models (keep the largest connected parts) in export.
-4. Pick more demo items with clean photos (`python -m scripts.curate candidates`, `pin <ids>`).
-5. Test AR on a real iPhone; optional demo branch (`python -m scripts.branch_demo`).
+2. Redo the demo-pinned models made from old u2net cutouts: reset each asset to status 'queued' with cutout_url,
+   views_used, provider, provider_job = null (new cutout + Meshy, ~30 credits each, ~310 credits left).
+3. Pick more demo items with clean photos (`python -m scripts.curate candidates`, `pin <ids>`).
+4. Test AR on a real iPhone; optional demo branch (`python -m scripts.branch_demo`).

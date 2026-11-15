@@ -12,3 +12,4 @@ python-dotenv>=1.0
 pytest>=8
 numpy
 selectolax>=0.3
+scipy>=1.11

@@ -1,4 +1,8 @@
-"""Stage: cutout (spec 6.3). rembg (u2net) -> crop to the alpha box -> pad 10% -> PNG in Blob."""
+"""Stage: cutout (spec 6.3). rembg (BiRefNet) -> keep the main object -> crop to the alpha box -> pad 10% -> PNG in Blob.
+
+u2net (the old default) dropped light parts against light walls (a white chair back) and kept bits of other
+furniture in the background, which the 3D providers turned into missing parts and floating fragments.
+CUTOUT_MODEL overrides the rembg model (birefnet-general-lite: ~20 s per photo on a laptop CPU)."""
 from __future__ import annotations
 
 import io
@@ -25,7 +29,7 @@ class BadMask(Exception):
 def _session(ctx: Ctx):
     if ctx._rembg is None:
         from rembg import new_session
-        ctx._rembg = new_session("u2net")
+        ctx._rembg = new_session(os.getenv("CUTOUT_MODEL", "birefnet-general-lite"))
     return ctx._rembg
 
 
@@ -35,7 +39,34 @@ def remove_background(ctx: Ctx, photo: bytes):
 
     img = ImageOps.exif_transpose(Image.open(io.BytesIO(photo))).convert("RGB")
     img.thumbnail((MAX_INPUT_PX, MAX_INPUT_PX))
-    return remove(img, session=_session(ctx))        # RGBA
+    return keep_main_object(remove(img, session=_session(ctx)))        # RGBA
+
+
+def keep_main_object(rgba, gap: float = 0.015):
+    """Drop mask pieces that are not part of the main object (other furniture or people in the background).
+    Keeps the largest connected piece plus any piece within `gap` x the image diagonal of it, so a chair's
+    casters or a lamp's separate shade survive while a chair back further behind it does not."""
+    import numpy as np
+    from PIL import Image
+    from scipy import ndimage
+
+    a = np.asarray(rgba.getchannel("A")).copy()
+    labels, n = ndimage.label(a > 128, structure=np.ones((3, 3)))
+    if n <= 1:
+        return rgba
+    sizes = ndimage.sum(np.ones_like(labels), labels, index=range(1, n + 1))
+    main = int(np.argmax(sizes)) + 1
+    dist = ndimage.distance_transform_edt(labels != main)        # pixels to the nearest main-object pixel
+    near_d = ndimage.minimum(dist, labels, index=range(1, n + 1))
+    limit = gap * float(np.hypot(*a.shape))
+    keep = np.concatenate([[False], np.asarray(near_d) <= limit])
+    keep[main] = True
+    # soft edge pixels (alpha <= 128) were not labelled: keep them only right next to kept pieces
+    near = ndimage.binary_dilation(keep[labels], iterations=3)
+    a[~near] = 0
+    out = rgba.copy()
+    out.putalpha(Image.fromarray(a))
+    return out
 
 
 def crop_and_pad(rgba, *, min_area: float = MIN_AREA, max_area: float = MAX_AREA, pad: float = PAD,

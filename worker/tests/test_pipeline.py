@@ -362,6 +362,21 @@ def test_crop_and_pad_thresholds():
         cutout.crop_and_pad(full)
 
 
+def test_keep_main_object_drops_background_pieces_but_keeps_nearby_parts():
+    img = Image.new("RGBA", (400, 400), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle([100, 100, 250, 300], fill=(200, 200, 200, 255))       # the chair
+    d.rectangle([110, 304, 125, 318], fill=(9, 9, 9, 255))             # a caster 4 px below it: keep
+    d.rectangle([320, 40, 380, 120], fill=(250, 250, 250, 255))        # another chair's back, far away: drop
+    out = cutout.keep_main_object(img)
+    assert out.getpixel((180, 200))[3] == 255
+    assert out.getpixel((117, 310))[3] == 255
+    assert out.getpixel((350, 80))[3] == 0
+    single = Image.new("RGBA", (50, 50), (0, 0, 0, 0))
+    ImageDraw.Draw(single).rectangle([10, 10, 40, 40], fill=(1, 1, 1, 255))
+    assert cutout.keep_main_object(single) is single                  # one piece: untouched
+
+
 def test_transient_download_error_retries_then_dead_letters(ctx, monkeypatch):
     import worker.stages.cutout as cutout_mod
     seed(ctx)
