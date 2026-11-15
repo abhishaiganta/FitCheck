@@ -110,14 +110,16 @@ export function evaluate(
       (r.demo_pin ? DEMO_PIN_BOOST : 0) + (r.asset_status === 'ready' && !r.is_approx_model ? REAL_MODEL_BOOST : 0) - (fit === 'too_big' ? TOO_BIG_PENALTY : 0);
     return { r, c: { ...c, car_fit: fit, car_name: car?.make_model ?? null, score } };
   });
-  scored.sort((a, b) => b.c.score - a.c.score || a.r.id - b.r.id);
+  // every listing with a real 3D model comes first, then the rest by relevance, price and distance
+  const real = (x: (typeof scored)[number]) => (x.r.asset_status === 'ready' && !x.r.is_approx_model && !!x.r.usdz_url ? 1 : 0);
+  scored.sort((a, b) => real(b) - real(a) || b.c.score - a.c.score || a.r.id - b.r.id);
   let ordered = scored;
   if (f.categories.length > 1) {
-    // round-robin by category so "lamp and side table" shows both
+    // round-robin by category so "lamp and side table" shows both (within the 3D group, then within the rest)
     const rank = new Map<string, number>();
     ordered = scored
-      .map((x) => { const n = (rank.get(x.r.category) ?? 0) + 1; rank.set(x.r.category, n); return { x, n }; })
-      .sort((a, b) => a.n - b.n || b.x.c.score - a.x.c.score || a.x.r.id - b.x.r.id)
+      .map((x) => { const k = `${real(x)}|${x.r.category}`; const n = (rank.get(k) ?? 0) + 1; rank.set(k, n); return { x, n }; })
+      .sort((a, b) => real(b.x) - real(a.x) || a.n - b.n || b.x.c.score - a.x.c.score || a.x.r.id - b.x.r.id)
       .map((y) => y.x);
   }
   return ordered.slice(0, opts.limit ?? RESULT_LIMIT).map(({ r, c }) => toCard(r, c, opts.now));

@@ -96,11 +96,15 @@ scored as (
     - case when f.car_fit = 'too_big' then ${TOO_BIG_PENALTY} else 0 end as score
   from fit f
 ),
+real3d as (
+  select s.*, (s.asset_status = 'ready' and not s.is_approx_model and s.usdz_url is not null) as has_real_model from scored s
+),
 ranked as (
-  select s.*, row_number() over (partition by s.category order by s.score desc, s.id) as cat_rank from scored s
+  select r.*, row_number() over (partition by r.has_real_model, r.category order by r.score desc, r.id) as cat_rank from real3d r
 )
 select * from ranked
-order by case when $17::bool then cat_rank else 0 end, score desc, id
+-- every listing with a real 3D model comes first, then the rest by relevance, price and distance
+order by has_real_model desc, case when $17::bool then cat_rank else 0 end, score desc, id
 limit $16::int`;
 
 export function searchParams(f: SearchArgs, origin: Origin, embedding: number[] | null, fuel: number, limit = RESULT_LIMIT) {

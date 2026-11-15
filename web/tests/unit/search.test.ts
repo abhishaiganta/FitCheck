@@ -23,6 +23,8 @@ describe('hybrid search SQL (fixture database)', () => {
     expect(cards.length).toBeGreaterThan(0);
     expect(cards.length).toBeLessThanOrEqual(24);
     expect(cards.some((c) => !c.has_model)).toBe(true);           // listings still waiting for a model are shown too
+    const firstWithout = cards.findIndex((c) => !c.has_model);
+    expect(cards.slice(firstWithout).every((c) => !c.has_model)).toBe(true); // every 3D listing comes first
     for (const c of cards) {
       // AR only for a model made from the listing's photos; a generic stand-in is listed without AR
       expect(c.has_model).toBe(c.asset_status === 'ready' && !c.is_approx_model);
@@ -146,6 +148,7 @@ describe('hybrid search SQL (fixture database)', () => {
       const f = parseSearchArgs(raw);
       const a = await searchListingsSql(f, UCSD, null, FUEL, { branch: 'main' });
       const b = evaluate(items, f, UCSD, cars, FUEL);
+      for (const cs of [a, b]) { const i = cs.findIndex((c) => !c.has_model); if (i >= 0) expect(cs.slice(i).every((c) => !c.has_model)).toBe(true); }
       const key = (c: (typeof a)[number]) => `${c.id}|${c.mode}|${c.total_usd.toFixed(2)}|${c.car_fit}`;
       expect(b.map(key), JSON.stringify(raw)).toEqual(a.map(key));
     }
