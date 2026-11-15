@@ -268,6 +268,13 @@ def test_job_lost_in_a_restart_is_resubmitted_to_the_same_provider(ctx):
     assert hf.submitted == 2 and ctx._providers[1].submitted == 0
 
 
+def test_hf_models_are_never_auto_rotated(ctx):
+    seed(ctx)
+    ctx._providers = [FakeProvider("hf", ["ok", "ok", "ok"])]
+    assets = run_until_settled(ctx)
+    assert {(a["provider"], a["orientation_used"]) for a in assets.values()} == {("hf", "identity")}
+
+
 def test_exporter_rejection_moves_to_next_provider(ctx):
     """A provider GLB that parses but has no meshes passes gen and is rejected by the exporter."""
     seed(ctx)
