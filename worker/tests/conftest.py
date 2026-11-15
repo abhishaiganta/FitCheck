@@ -14,6 +14,10 @@ import pytest
 
 from worker.config import get_settings
 
+# runtime switches in worker/.env change provider choice; tests pin the default behaviour
+for _flag in ("MESHY_SELLER_ONLY", "MULTI_PHOTO"):
+    os.environ.pop(_flag, None)
+
 
 class Clock:
     """Mock clock for limits tests."""

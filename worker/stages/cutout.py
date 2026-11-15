@@ -18,6 +18,7 @@ from ..tagging import pick_views
 
 log = logging.getLogger("worker.cutout")
 MIN_AREA, MAX_AREA = 0.08, 0.95
+SELLER_MIN_AREA = 0.015
 PAD = 0.10
 MAX_INPUT_PX = 1280
 OUT_PX = 1024
@@ -100,7 +101,7 @@ def crop_and_pad(rgba, *, min_area: float = MIN_AREA, max_area: float = MAX_AREA
 
 def process_one(ctx: Ctx, asset: dict) -> None:
     db, lid = ctx.db, asset["listing_id"]
-    row = db.one("""select l.photo_urls, d.best_photo_idx, d.views from listings l
+    row = db.one("""select l.photo_urls, l.source, d.best_photo_idx, d.views from listings l
                     join listing_details d on d.listing_id = l.id where l.id = %s""", (lid,))
     if not row or not row["photo_urls"]:
         raise BadMask("listing has no photos")
@@ -122,7 +123,8 @@ def process_one(ctx: Ctx, asset: dict) -> None:
             continue
         try:
             photo = fetch_bytes(urls[idx], timeout=40, max_mb=25)
-            png, cov = crop_and_pad(remove_background(ctx, photo))
+            # a seller's own photo of a small thing (a bottle shot from a step back) can fill only a few percent of the frame
+            png, cov = crop_and_pad(remove_background(ctx, photo), min_area=SELLER_MIN_AREA if row["source"] == "liveroom" else MIN_AREA)
         except (BadMask, ProviderError) as e:
             if idx == best:
                 raise                                 # the main photo must work (a transient download error is retried)

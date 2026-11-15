@@ -138,7 +138,11 @@ def _poll_running(ctx: Ctx, by_name: dict[str, Provider]) -> tuple[int, dict[str
             _provider_failed(ctx, asset, pname, f"timed out after {int(age)}s")
         else:
             busy.setdefault(pname, set()).add(kh)
-            db.x("update assets set locked_by=%s, locked_at=now() where listing_id=%s", (WORKER_ID, lid))
+            # the provider's own percent (Meshy, Tripo) so the /sell page can show a real progress bar
+            prog = {"progress": int(res.progress)} if isinstance(res.progress, (int, float)) else {}
+            db.x("""update assets set locked_by=%s, locked_at=now(),
+                    gen_state = coalesce(gen_state, '{}'::jsonb) || %s::jsonb where listing_id=%s""",
+                 (WORKER_ID, jsonb({**prog, "polled_at": datetime.now(timezone.utc).isoformat()}), lid))
     return finished, busy
 
 

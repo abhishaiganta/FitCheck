@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BuildProgress } from '@/components/BuildProgress';
 import { PostElsewhere } from '@/components/PostElsewhere';
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { categoryFromText, isCategory, type Category } from '@/lib/logic/categories';
@@ -9,20 +10,11 @@ type Draft = {
   id: number; status: 'new' | 'processing' | 'ready' | 'failed'; category: string | null; title: string | null;
   height_in: number; ask_usd: number | null; fair_price_usd: number | null; fair_low_usd: number | null; fair_high_usd: number | null;
   comps_n: number | null; error: string | null; item: string | null; photo_url: string | null; price_source: 'comps' | 'estimate' | null; price_basis: string | null; listing_id: number | null; published: boolean;
-  asset_status: string | null; usdz_url: string | null; glb_url: string | null; is_approx_model: boolean;
+  asset_status: string | null; gen_progress: number | null; gen_waiting: boolean; provider: string | null; usdz_url: string | null; glb_url: string | null; is_approx_model: boolean;
   w_in: number | null; d_in: number | null; h_in: number | null;
 };
 
 const STORE = 'liveroom.sell.draft';
-const STEP: Record<string, string> = {
-  new: 'Photo received. Waiting for the 3D worker…',
-  queued: 'Reading your photo and finding similar listings…',
-  cutout: 'Cutting the item out of the background…',
-  gen_pending: 'Building the 3D model (about a minute)…',
-  gen_done: 'Scaling it to your measurements…',
-  exporting: 'Making the AR file for iPhone and Android…',
-};
-
 /** Shrink to <= 1600 px JPEG in the browser so uploads stay small and fast on phone data. */
 async function shrinkPhoto(file: File): Promise<Blob> {
   try {
@@ -298,8 +290,10 @@ export default function SellPage() {
           {(!draft || draft.status === 'new' || draft.status === 'processing') && (
             <>
               <p className="text-lg font-bold">Making your 3D listing</p>
-              <p className="mt-1 text-muted">{STEP[draft?.status === 'processing' ? draft.asset_status ?? 'queued' : 'new'] ?? 'Working on it…'}</p>
-              <div className="skeleton mt-4 h-3 w-full rounded-full" />
+              <div className="mt-3">
+                <BuildProgress stage={draft?.status === 'processing' ? draft.asset_status ?? 'queued' : 'new'}
+                  providerPct={draft?.gen_progress ?? null} waiting={!!draft?.gen_waiting} />
+              </div>
               {draft?.fair_price_usd != null && (
                 <p className="mt-4">Price that should sell (estimate): <b>${Math.round(draft.fair_price_usd)}</b> <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}. <PriceBasis source={draft.price_source} basis={draft.price_basis} n={draft.comps_n ?? 0} />)</span></p>
               )}
