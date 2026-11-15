@@ -39,14 +39,14 @@ function filterChips(f: SearchArgs): string[] {
   return out;
 }
 
-export function SearchExperience({ places }: { places: string[] }) {
+export function SearchExperience() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [text, setText] = useState('');
   const [data, setData] = useState<SearchResponse | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [dbDown, setDbDown] = useState(false);
   const [broken, setBroken] = useState<Record<number, boolean>>({});
-  const [editOrigin, setEditOrigin] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [speaking, setSpeaking] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +121,6 @@ export function SearchExperience({ places }: { places: string[] }) {
       setDbDown(false);
       setData(out);
       setPhase('idle');
-      setEditOrigin(false);
       void speak(out.spoken_summary);
       const ids = out.results.filter((r) => r.has_model).map((r) => r.id);
       if (ids.length && out.data_source === 'live') {
@@ -205,14 +204,16 @@ export function SearchExperience({ places }: { places: string[] }) {
   };
 
   const useMyLocation = () => {
-    if (!navigator.geolocation) return setNotice('This browser cannot share a location. Pick a neighborhood instead.');
+    if (!navigator.geolocation) return setNotice('This browser cannot share a location, so distances are from UCSD.');
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {
+        setLocating(false);
         // rounded to 2 decimals (about half a mile) before it leaves the phone; never stored
         coordsRef.current = { lat: Math.round(p.coords.latitude * 100) / 100, lng: Math.round(p.coords.longitude * 100) / 100 };
         if (dataRef.current) void runSearch(dataRef.current.query, { origin_text: null });
       },
-      () => setNotice('Location is off. Pick a neighborhood instead.'),
+      () => { setLocating(false); setNotice('Location is off for this site, so distances are from UCSD. Turn it on in your browser settings to search from where you are.'); },
       { maximumAge: 300_000, timeout: 8000 },
     );
   };
@@ -313,23 +314,15 @@ export function SearchExperience({ places }: { places: string[] }) {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <p className="font-semibold" data-testid="origin">
               From {data.origin.label}{data.origin.source === 'default' ? ' (default)' : ''}
-              <button className="ml-2 text-blanket underline" onClick={() => setEditOrigin((v) => !v)}>change</button>
+              {data.origin.source !== 'browser' && (
+                <button className="ml-2 text-blanket underline" disabled={locating} onClick={useMyLocation}>
+                  {locating ? 'finding you…' : 'use my location'}
+                </button>
+              )}
             </p>
             {chips.map((c) => <span key={c} className="badge" data-testid="filter-chip">{c}</span>)}
           </div>
 
-          {editOrigin && (
-            <div className="panel mt-3 flex flex-wrap items-center gap-2 p-3">
-              <label htmlFor="origin" className="text-sm font-semibold">Search from</label>
-              <select id="origin" defaultValue="" className="min-h-11 rounded-[10px] border-[1.5px] border-ink bg-white px-2"
-                onChange={(e) => { if (e.target.value) { coordsRef.current = null; void runSearch(data.query, { origin_text: e.target.value }); } }}>
-                <option value="" disabled>Pick a neighborhood</option>
-                {places.map((p) => <option key={p}>{p}</option>)}
-              </select>
-              <button className="btn btn-quiet" onClick={useMyLocation}>Use my location</button>
-              <span className="text-sm text-muted">Location is rounded to about half a mile and never stored.</span>
-            </div>
-          )}
 
           <div className="mt-4 flex items-start gap-3">
             <p className="max-w-[70ch] text-lg" data-testid="summary">{data.spoken_summary}</p>

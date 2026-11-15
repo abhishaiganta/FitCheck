@@ -47,6 +47,8 @@ export default function SellPage() {
   const [item, setItem] = useState('');
   const [estCategory, setEstCategory] = useState<Category | null>(null);
   const [condition, setCondition] = useState<'like_new' | 'good' | 'fair'>('good');
+  const [width, setWidth] = useState('');
+  const [depth, setDepth] = useState('');
   const [height, setHeight] = useState('');
   const [ask, setAsk] = useState('');
   const [price, setPrice] = useState<Price | null>(null);
@@ -99,31 +101,21 @@ export default function SellPage() {
       if (run !== measureRun.current) return;
       if (!res.ok) throw new Error(j?.error?.message ?? 'measure failed');
       setEst(j);
-      setHeight(String(j.h_in));
+      setWidth(String(j.w_in)); setDepth(String(j.d_in)); setHeight(String(j.h_in));
       setEstCategory(j.category && isCategory(j.category) ? j.category : null);
       if (j.item) setItem((t) => t || j.item);
       if (j.title) setTitle((t) => t || j.title);
     } catch {
       if (run !== measureRun.current) return;
       setEst(null);
-      setMeasureMsg("Couldn't size it from the photo. Type the height instead.");
+      setMeasureMsg("Couldn't size it from the photo. Type the size below instead.");
     } finally { if (run === measureRun.current) setMeasuring(false); }
   }, []);
 
-  /** "Looks smaller / bigger": scale the whole estimate, keeping its proportions. */
-  const nudge = (k: number) => {
-    setEst((e) => {
-      if (!e) return e;
-      const r = (v: number) => Math.max(2, Math.round(v * k * 2) / 2);
-      const next = { ...e, w_in: r(e.w_in), d_in: r(e.d_in), h_in: r(e.h_in) };
-      setHeight(String(next.h_in));
-      return next;
-    });
-  };
-
   // free text -> our closest furniture category (for local comps); anything else ("water bottle") prices on its own
   const category: Category | null = categoryFromText(item) ?? (est?.item && item.trim().toLowerCase() === est.item ? estCategory : null);
-  const sizeFields = () => (est ? { w_in: est.w_in, d_in: est.d_in, h_in: Number(height) || est.h_in } : {});
+  const inches = (v: string) => { const n = Number(v); return Number.isFinite(n) && n > 0 && n < 200 ? n : undefined; };
+  const sizeFields = () => ({ w_in: inches(width), d_in: inches(depth), h_in: inches(height) });
 
   const suggest = async () => {
     setBusy(true); setMsg(null);
@@ -150,7 +142,9 @@ export default function SellPage() {
       fd.set('item', item.trim());
       if (category) fd.set('category', category);
       fd.set('condition', condition);
-      if (est) { fd.set('w_in', String(est.w_in)); fd.set('d_in', String(est.d_in)); fd.set('est_h_in', String(est.h_in)); }
+      const { w_in, d_in } = sizeFields();
+      if (w_in) fd.set('w_in', String(w_in));
+      if (d_in) fd.set('d_in', String(d_in));
       if (ask) fd.set('ask_usd', ask);
       const res = await fetch('/api/seller/draft', { method: 'POST', body: fd });
       const j = await res.json();
@@ -180,7 +174,7 @@ export default function SellPage() {
   const startOver = () => {
     localStorage.removeItem(STORE);
     if (timer.current) clearTimeout(timer.current);
-    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false); setEst(null); setSide(null); setHeight(''); setMeasureMsg(null); setItem(''); setTitle(''); setEstCategory(null); setPrice(null);
+    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false); setEst(null); setSide(null); setHeight(''); setWidth(''); setDepth(''); setMeasureMsg(null); setItem(''); setTitle(''); setEstCategory(null); setPrice(null);
   };
 
   const inputCls = 'mt-1 block min-h-11 w-full rounded-[10px] border-[1.5px] border-ink px-3';
@@ -195,13 +189,25 @@ export default function SellPage() {
 
       {!auth && (
         <form className="panel mt-5 space-y-4 p-5" onSubmit={(e) => { e.preventDefault(); void create(); }}>
-          <label className="block font-semibold">Photo of the item
-            <input type="file" accept="image/*" capture="environment" className="mt-1 block w-full text-sm"
-              onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setPhoto(f ? URL.createObjectURL(f) : null); setEst(null); if (f) void measure(f, side); }} />
-            <span className="mt-1 block text-sm font-normal text-muted">For an accurate 3D model: the whole item in frame (legs included), shot from a slight corner angle at about its own height, nothing on top of it, plain wall or floor behind.</span>
-          </label>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {photo && <img src={photo} alt="Your item" className="max-h-64 rounded-xl border border-line object-contain" />}
+          <div>
+            <p className="font-semibold">Photo of the item</p>
+            <label className="mt-1 flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-[1.5px] border-dashed border-ink bg-paper p-3 text-center focus-within:outline focus-within:outline-3 focus-within:outline-blanket"
+              data-testid="photo-picker">
+              {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo} alt="Your item" className="max-h-64 rounded-lg object-contain" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-12 w-12 text-tape" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8l1.4-2h6.6l1.4 2h1.8A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" />
+                  <circle cx="12" cy="12.5" r="3.6" />
+                </svg>
+              )}
+              <span className="font-semibold">{photo ? 'Change photo' : 'Take or upload a photo'}</span>
+              <input type="file" accept="image/*" className="sr-only"
+                onChange={(e) => { const f = e.target.files?.[0] ?? null; if (!f) return; setFile(f); setPhoto(URL.createObjectURL(f)); setEst(null); void measure(f, side); e.target.value = ''; }} />
+            </label>
+            <p className="mt-1 text-sm text-muted">For an accurate 3D model: the whole item in frame (legs included), shot from a slight corner angle at about its own height, nothing on top of it, plain wall or floor behind.</p>
+          </div>
           {(measuring || est || measureMsg) && (
             <div className="rounded-xl border-[1.5px] border-line bg-paper p-3" aria-live="polite" data-testid="measure">
               {measuring && <p className="font-semibold">Sizing it from your photo…</p>}
@@ -218,8 +224,6 @@ export default function SellPage() {
                       : 'No size cue in the photo, so this is a typical size for this kind of item.'}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button type="button" className="btn btn-quiet !min-h-9 text-sm" onClick={() => nudge(0.9)}>It&apos;s smaller</button>
-                    <button type="button" className="btn btn-quiet !min-h-9 text-sm" onClick={() => nudge(1.1)}>It&apos;s bigger</button>
                     <label className="btn btn-quiet !min-h-9 text-sm">
                       {side ? 'Replace side photo' : 'Add a side photo'}
                       <input type="file" accept="image/*" capture="environment" className="sr-only"
@@ -246,9 +250,20 @@ export default function SellPage() {
                 <option value="like_new">Like new</option><option value="good">Good</option><option value="fair">Fair</option>
               </select>
             </label>
-            <label className="block font-semibold">Height (inches{est ? ', filled in from your photo' : ''})
-              <input inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="22" className={inputCls} />
-            </label>
+            <fieldset className="sm:col-span-2">
+              <legend className="font-semibold">Size in inches{est ? ' (filled in from your photo, fix it if it looks off)' : ''}</legend>
+              <div className="mt-1 grid grid-cols-3 gap-3">
+                <label className="block text-sm font-semibold">Width
+                  <input inputMode="decimal" value={width} onChange={(e) => setWidth(e.target.value)} placeholder="18" className={inputCls} />
+                </label>
+                <label className="block text-sm font-semibold">Depth
+                  <input inputMode="decimal" value={depth} onChange={(e) => setDepth(e.target.value)} placeholder="18" className={inputCls} />
+                </label>
+                <label className="block text-sm font-semibold">Height
+                  <input inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="22" className={inputCls} />
+                </label>
+              </div>
+            </fieldset>
             <label className="block font-semibold">Asking price ($, optional)
               <input inputMode="decimal" value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="40" className={inputCls} />
             </label>
