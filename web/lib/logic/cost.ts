@@ -2,7 +2,7 @@
 export const ROAD_FACTOR = 1.3; // straight-line -> road miles
 export const AVG_MPH = 25;
 export const DEFAULT_FUEL_USD_PER_MI = 0.15;
-export const DEFAULT_MAX_DISTANCE_MI = 10;
+export const DEFAULT_MAX_DISTANCE_MI = 20;
 export const WALK_MAX_MI = 1;
 export const WALK_MAX_LB = 15;
 /** Listings that only say "San Diego" sit at the city centroid. Keep them when the shopper's radius is at least this. */
@@ -37,7 +37,7 @@ export const roadMiles = (lat1: number, lng1: number, lat2: number, lng2: number
 
 export const driveMinutes = (road_mi: number) => Math.max(1, Math.round((road_mi / AVG_MPH) * 60));
 
-/** max_drive_min wins, then max_distance_mi, then the 10 mile default. Result is in road miles. */
+/** max_drive_min wins, then max_distance_mi, then the 20 mile default. Result is in road miles. */
 export function maxRoadMiles(f: { max_drive_min?: number | null; max_distance_mi?: number | null }): number {
   if (f.max_drive_min && f.max_drive_min > 0) return round2((f.max_drive_min / 60) * AVG_MPH);
   if (f.max_distance_mi && f.max_distance_mi > 0) return f.max_distance_mi;

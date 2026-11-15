@@ -65,7 +65,7 @@ export function widenChips(f: SearchArgs): WidenChip[] {
   if (!f.ships_ok) chips.push({ label: 'Include shipped items', override: { ships_ok: true } });
   if (f.ships_only) chips.push({ label: 'Include pickup', override: { ships_only: false } });
   if (f.style_text) chips.push({ label: 'Any style', override: { style_text: null } });
-  if (f.has_car && maxRoadMiles(f) < 25) chips.push({ label: 'Search within 25 miles', override: { max_distance_mi: 25, max_drive_min: null } });
+  if (f.has_car && maxRoadMiles(f) < 40) chips.push({ label: 'Search within 40 miles', override: { max_distance_mi: 40, max_drive_min: null } });
   if (f.max_w_in || f.max_d_in || f.max_h_in) chips.push({ label: 'Any size', override: { max_w_in: null, max_d_in: null, max_h_in: null } });
   if (f.categories.length) chips.push({ label: 'Any furniture', override: { categories: [] } });
   return chips.slice(0, 4);

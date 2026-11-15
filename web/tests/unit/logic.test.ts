@@ -58,10 +58,10 @@ describe('distance helpers', () => {
     expect(driveMinutes(25)).toBe(60);
     expect(driveMinutes(0.1)).toBe(1);
   });
-  it('max_drive_min wins, then max_distance_mi, then 10 miles', () => {
+  it('max_drive_min wins, then max_distance_mi, then 20 miles', () => {
     expect(maxRoadMiles({ max_drive_min: 12, max_distance_mi: 50 })).toBe(5);
     expect(maxRoadMiles({ max_distance_mi: 4 })).toBe(4);
-    expect(maxRoadMiles({})).toBe(10);
+    expect(maxRoadMiles({})).toBe(20);
   });
   it('money, savings and age labels', () => {
     expect(formatUsd(0)).toBe('FREE');

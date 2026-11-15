@@ -65,7 +65,7 @@ test('on a device without AR Quick Look the button opens the 3D preview, and QR 
 test('empty search explains why and widens with one tap', async ({ page }) => {
   await open(page, '/');
   await search(page, 'dresser under $5 pickup only');
-  await expect(page.getByTestId('empty')).toContainText('No matches under $5 within 10 miles.');
+  await expect(page.getByTestId('empty')).toContainText('No matches under $5 within 20 miles.');
   await page.getByTestId('widen').filter({ hasText: 'Any furniture' }).click();
   await expect(page.getByTestId('card').first()).toBeVisible();
 });

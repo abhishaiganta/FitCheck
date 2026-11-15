@@ -168,10 +168,10 @@ describe('spoken summary and empty states', () => {
   });
   it('empty search: clear message plus one-tap widen chips', () => {
     const f = parseSearchArgs({ categories: ['desk'], max_total_usd: 10, ships_ok: false, style_text: 'pink' });
-    expect(emptyMessage(f)).toBe('No matches under $10 within 10 miles.');
-    expect(spokenSummary([], f)).toBe('No matches under $10 within 10 miles.');
+    expect(emptyMessage(f)).toBe('No matches under $10 within 20 miles.');
+    expect(spokenSummary([], f)).toBe('No matches under $10 within 20 miles.');
     const labels = widenChips(f).map((c) => c.label);
-    expect(labels).toEqual(['Raise budget to $15', 'Include shipped items', 'Any style', 'Search within 25 miles']);
+    expect(labels).toEqual(['Raise budget to $15', 'Include shipped items', 'Any style', 'Search within 40 miles']);
     expect(emptyMessage(parseSearchArgs({ has_car: false }))).toMatch(/walking distance or shipped/);
   });
 });

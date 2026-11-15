@@ -108,7 +108,7 @@ describe('search never hard-fails', () => {
   it('empty results come with a message and chips', async () => {
     const out = await handleSearch({ text: 'dresser under $5 pickup only' }, ids);
     expect(out.results).toEqual([]);
-    expect(out.empty_message).toBe('No matches under $5 within 10 miles.');
+    expect(out.empty_message).toBe('No matches under $5 within 20 miles.');
     expect(out.widen.length).toBeGreaterThan(1);
     expect(out.spoken_summary).toBe(out.empty_message);
   });
