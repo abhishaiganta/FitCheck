@@ -169,7 +169,7 @@ export async function estimateItemSize(images: { mime: string; b64: string }[]):
         required: ['w_in', 'd_in', 'h_in', 'confidence', 'basis'],
       },
     },
-  }, 12_000);
+  }, 20_000);
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.find((p: any) => typeof p.text === 'string')?.text;
   return parseSizeEstimate(text);
 }

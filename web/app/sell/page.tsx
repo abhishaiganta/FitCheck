@@ -96,7 +96,8 @@ export default function SellPage() {
       const fd = new FormData();
       fd.set('photo', await shrinkPhoto(front), 'photo.jpg');
       if (sideView) fd.set('photo2', await shrinkPhoto(sideView), 'side.jpg');
-      const res = await fetch('/api/seller/measure', { method: 'POST', body: fd });
+      let res = await fetch('/api/seller/measure', { method: 'POST', body: fd });
+      if (res.status >= 500 && run === measureRun.current) res = await fetch('/api/seller/measure', { method: 'POST', body: fd }); // one retry: a cold start can time out
       const j = await res.json().catch(() => null);
       if (run !== measureRun.current) return;
       if (!res.ok) throw new Error(j?.error?.message ?? 'measure failed');
