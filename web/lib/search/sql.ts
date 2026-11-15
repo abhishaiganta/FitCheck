@@ -3,7 +3,7 @@ import { query, readBranch, toVector, type Branch } from '../db';
 import type { Car } from '../logic/carFit';
 import { CITY_ONLY_MIN_RADIUS_MI, maxRoadMiles } from '../logic/cost';
 import type { Origin } from '../logic/geo';
-import { DEMO_PIN_BOOST, RESULT_LIMIT, TOO_BIG_PENALTY, styleWords, toCard } from './evaluate';
+import { DEMO_PIN_BOOST, REAL_MODEL_BOOST, RESULT_LIMIT, TOO_BIG_PENALTY, styleWords, toCard } from './evaluate';
 import type { SearchArgs } from './schema';
 import type { Card, RawItem } from './types';
 
@@ -92,6 +92,7 @@ scored as (
     0.6 * coalesce(f.vec_sim, f.kw_sim)
     + 0.4 * (1 - coalesce(f.total / nullif(max(f.total) over (), 0), 0))
     + case when f.demo_pin then ${DEMO_PIN_BOOST} else 0 end
+    + case when f.asset_status = 'ready' and not f.is_approx_model then ${REAL_MODEL_BOOST} else 0 end
     - case when f.car_fit = 'too_big' then ${TOO_BIG_PENALTY} else 0 end as score
   from fit f
 ),

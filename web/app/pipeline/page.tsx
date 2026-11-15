@@ -72,7 +72,7 @@ export default function PipelinePage() {
           </div>
         ))}
       </dl>
-      {share != null && <p className="mt-1 text-sm text-muted">{real} made from the listing photo, {approx} generic stand-ins labeled &ldquo;approx model&rdquo;.</p>}
+      {share != null && <p className="mt-1 text-sm text-muted">{real} made from the listing photo, {approx} generic size stand-ins (labeled &ldquo;size stand-in&rdquo;).</p>}
 
       <h2 className="mt-7 text-2xl font-bold">Where every item is</h2>
       <ol className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8" data-testid="pipeline-columns">

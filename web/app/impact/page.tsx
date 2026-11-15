@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 type Stats = {
@@ -55,6 +56,9 @@ export default function ImpactPage() {
       <p className="mt-6 max-w-[70ch] text-sm text-muted">
         How the estimates work: savings compare each listing&apos;s total cost with the median new price for its category; weight comes
         from the vision model&apos;s estimate for each item. {s ? `${n(s.searches)} searches and ${n(s.listing_opens)} listing opens so far.` : ''}
+      </p>
+      <p className="mt-3 text-sm text-muted">
+        Curious how a listing becomes a 3D model? <Link className="underline" href="/pipeline">Watch the pipeline live</Link>.
       </p>
     </div>
   );

@@ -3,12 +3,12 @@
     python -m scripts.import_model --url https://www.facebook.com/marketplace/item/1234567890/ --glb chair.glb
     python -m scripts.import_model --id 42 --glb chair.glb
     python -m scripts.import_model --csv models.csv          # columns: url (or id), glb, [orient]
-    options: --orient x+90   --no-pin   --max-tris 150000   --no-export
+    options: --orient x+90   --no-pin   --max-tris 80000   --no-export
 
 What it does, per model:
   1. finds the listing in Neon by URL or id. A Marketplace or eBay URL that is not in the database yet is
      fetched through Bright Data (1-3 min) and tagged by Gemini, exactly like the worker would.
-  2. shrinks the GLB (website exports are ~2M triangles / 4K textures; phones want <= 150k and the USDZ <= 15 MB)
+  2. shrinks the GLB (website exports are ~2M triangles / 4K textures; phones want <= 80k (the USDZ stores geometry uncompressed) <= 15 MB)
   3. uploads it as the listing's raw model (provider 'manual', a real model, not approx) and pins the listing
   4. runs the normal export right away: auto-orient, scale to the listing's dimensions, USDZ + GLB, validation
   5. prints the USDZ URL and writes a preview PNG to previews/ so a human can check it is upright
@@ -120,7 +120,7 @@ def ensure_details(ctx: Ctx, listing: dict) -> None:
 
 
 def import_one(ctx: Ctx, glb_path: Path, url: str | None = None, lid: int | None = None, orient: str | None = None,
-               pin: bool = True, max_tris: int = 150_000, export: bool = True) -> dict:
+               pin: bool = True, max_tris: int = 80_000, export: bool = True) -> dict:
     db = ctx.db
     if not glb_path.exists():
         raise ImportFailed(f"file not found: {glb_path}")
@@ -210,7 +210,7 @@ def main() -> int:
     ap.add_argument("--orient", choices=ORIENTATIONS)
     ap.add_argument("--no-pin", action="store_true")
     ap.add_argument("--no-export", action="store_true")
-    ap.add_argument("--max-tris", type=int, default=150_000)
+    ap.add_argument("--max-tris", type=int, default=80_000)
     a = ap.parse_args()
     if not a.csv and not a.glb:
         ap.error("--glb is required with --url / --id")

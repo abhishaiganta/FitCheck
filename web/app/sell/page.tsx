@@ -149,7 +149,7 @@ export default function SellPage() {
           <label className="block font-semibold">Photo of the item
             <input type="file" accept="image/*" capture="environment" className="mt-1 block w-full text-sm"
               onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setPhoto(f ? URL.createObjectURL(f) : null); }} />
-            <span className="mt-1 block text-sm font-normal text-muted">Whole item in frame, plain background if you can.</span>
+            <span className="mt-1 block text-sm font-normal text-muted">For an accurate 3D model: the whole item in frame (legs included), shot from a slight corner angle at about its own height, nothing on top of it, plain wall or floor behind.</span>
           </label>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="Your item" className="max-h-64 rounded-xl border border-line object-contain" />}
@@ -189,10 +189,10 @@ export default function SellPage() {
             <p className="font-semibold">No comparable {CATEGORY_LABEL[category][1]} are listed yet, so there is no price to suggest.</p>
           ) : (
             <>
-              <p className="text-muted">Fair price (estimate)</p>
+              <p className="text-muted">Price that should sell this week (estimate)</p>
               <p className="font-display text-6xl font-extrabold">${price.suggested_usd}</p>
               <p className="mt-1 text-muted">
-                Similar {CATEGORY_LABEL[category][1]} nearby go for ${price.low_usd} to ${price.high_usd}, from {price.comparables} listing{price.comparables === 1 ? '' : 's'}.
+                Quick sale ~${price.low_usd}, typical ${price.high_usd}, from {price.comparables} similar local listing{price.comparables === 1 ? '' : 's'} on Craigslist and Marketplace.
               </p>
             </>
           )}
@@ -207,7 +207,7 @@ export default function SellPage() {
               <p className="mt-1 text-muted">{STEP[draft?.status === 'processing' ? draft.asset_status ?? 'queued' : 'new'] ?? 'Working on it…'}</p>
               <div className="skeleton mt-4 h-3 w-full rounded-full" />
               {draft?.fair_price_usd != null && (
-                <p className="mt-4">Fair price (estimate): <b>${Math.round(draft.fair_price_usd)}</b> <span className="text-muted">(${Math.round(draft.fair_low_usd ?? 0)} to ${Math.round(draft.fair_high_usd ?? 0)} from {draft.comps_n} similar listings)</span></p>
+                <p className="mt-4">Price that should sell (estimate): <b>${Math.round(draft.fair_price_usd)}</b> <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}, from {draft.comps_n} similar local listings)</span></p>
               )}
               <p className="mt-3 text-sm text-muted">Usually 1 to 3 minutes. You can leave this page open; it updates by itself.</p>
             </>
@@ -233,8 +233,8 @@ export default function SellPage() {
               </div>
               {dims && <p className="mt-2 text-sm text-muted">True size: {dims}. On a phone, tap the AR button to place it in a room.</p>}
               {draft.fair_price_usd != null ? (
-                <p className="mt-4">Fair price (estimate): <b className="text-2xl">${Math.round(draft.fair_price_usd)}</b>{' '}
-                  <span className="text-muted">(${Math.round(draft.fair_low_usd ?? 0)} to ${Math.round(draft.fair_high_usd ?? 0)} from {draft.comps_n} similar listings)</span></p>
+                <p className="mt-4">Price that should sell (estimate): <b className="text-2xl">${Math.round(draft.fair_price_usd)}</b>{' '}
+                  <span className="text-muted">(quick sale ~${Math.round(draft.fair_low_usd ?? 0)}, typical ${Math.round(draft.fair_high_usd ?? 0)}, from {draft.comps_n} similar local listings)</span></p>
               ) : (
                 <p className="mt-4 text-muted">Not enough similar listings yet to suggest a price.</p>
               )}

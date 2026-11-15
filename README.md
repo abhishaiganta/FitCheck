@@ -132,7 +132,7 @@ python -m scripts.import_model --url "https://www.facebook.com/marketplace/item/
 
 For a batch, use `--csv models_in/models.csv` (columns `url,glb,orient`). The script:
 1. Fetches the listing through Bright Data if needed.
-2. Shrinks the mesh to 150k triangles and 2K textures.
+2. Shrinks the mesh to 80k triangles (150k makes a USDZ over 15 MB) and 2K textures.
 3. Uploads it and pins the listing.
 4. Exports and validates it.
 5. Writes `previews/import-<id>.png` so you can check it.

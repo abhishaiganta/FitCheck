@@ -16,7 +16,7 @@ class ShrinkError(Exception):
     pass
 
 
-def shrink_glb(data: bytes, max_tris: int = 150_000, max_tex: int = 2048, timeout: float = 300) -> tuple[bytes, dict]:
+def shrink_glb(data: bytes, max_tris: int = 80_000, max_tex: int = 2048, timeout: float = 300) -> tuple[bytes, dict]:
     if not (HERE / "node_modules" / "@gltf-transform" / "core").exists():
         raise ShrinkError("glTF-Transform is not installed: run `npm install --prefix worker/meshtools`")
     with tempfile.TemporaryDirectory() as tmp:

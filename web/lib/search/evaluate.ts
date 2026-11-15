@@ -11,6 +11,8 @@ import type { Card, RawItem } from './types';
 
 export const RESULT_LIMIT = 8;
 export const DEMO_PIN_BOOST = 0.15;
+/** A model made from the listing's own photos beats a generic stand-in of similar relevance. */
+export const REAL_MODEL_BOOST = 0.25;
 export const TOO_BIG_PENALTY = 0.25;
 
 export function styleWords(style_text: string | null | undefined): string[] {
@@ -104,7 +106,7 @@ export function evaluate(
     const fit = car && r.w && r.d && r.h ? carFit({ w: r.w, d: r.d, h: r.h }, car) : null;
     const score =
       0.6 * sim + 0.4 * (1 - (maxTotal > 0 ? c.total / maxTotal : 0)) +
-      (r.demo_pin ? DEMO_PIN_BOOST : 0) - (fit === 'too_big' ? TOO_BIG_PENALTY : 0);
+      (r.demo_pin ? DEMO_PIN_BOOST : 0) + (r.asset_status === 'ready' && !r.is_approx_model ? REAL_MODEL_BOOST : 0) - (fit === 'too_big' ? TOO_BIG_PENALTY : 0);
     return { r, c: { ...c, car_fit: fit, car_name: car?.make_model ?? null, score } };
   });
   scored.sort((a, b) => b.c.score - a.c.score || a.r.id - b.r.id);

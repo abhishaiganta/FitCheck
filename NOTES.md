@@ -60,7 +60,7 @@ Tests run in their own schema and drop it.
   total = cheaper of price + shipping and price + pickup, `delivery` says which. Rows without an honest total
   (no location and no shipping price) are not returned. Person B: build the search on top of it.
 - **Hand-made models** (Person D, Tripo/Meshy websites): `scripts.import_model` fetches the listing through
-  Bright Data if it is not in Neon yet, tags it, shrinks the GLB to <= 150k triangles and 2K textures
+  Bright Data if it is not in Neon yet, tags it, shrinks the GLB to <= 80k triangles and 2K textures
   (glTF-Transform + meshoptimizer), stores it as provider `manual` (real model, not approx), pins the listing,
   exports and validates right away, and writes a preview PNG. Seam-heavy textured meshes are NOT sloppy-simplified:
   it smeared a Meshy texture in testing, so those stay heavier instead.

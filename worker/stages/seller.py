@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import re
-import statistics
 
 from ..config import CATEGORY_ALLOWLIST
 from ..context import Ctx
@@ -49,10 +48,43 @@ def guess_category(text: str) -> str:
     return "other"
 
 
+# Sets of 2-6 ("set of 4 bar stools") and table-and-chairs bundles are priced for the whole set and would
+# inflate a one-item suggestion.
+SET_TITLE = (r"(set of|pair of|\m(2|3|4|5|6|two|three|four|five|six)\s*(x\s*)?(pc|pcs|pieces|stools|chairs|tables|nightstands|lamps)\M"
+             r"|\mset\M|table\M.*\mchairs|chairs\M.*\mtable)")
+# Too few comps in a category (fewer than WIDEN_BELOW): borrow from the closest categories
+WIDEN_BELOW = 5
+RELATED = {
+    "dining_chair": ["accent_chair", "stool"], "accent_chair": ["dining_chair"], "stool": ["dining_chair", "ottoman"],
+    "ottoman": ["stool"], "side_table": ["nightstand"], "nightstand": ["side_table"], "coffee_table": ["side_table"],
+    "desk_lamp": ["floor_lamp"], "floor_lamp": ["desk_lamp"], "desk": ["side_table"], "bookshelf": ["dresser"],
+    "dresser": ["nightstand"],
+}
+
+
+def _q(prices: list[float], p: float) -> float:
+    """Linear-interpolated quantile of a sorted list (same as Postgres percentile_cont)."""
+    i = p * (len(prices) - 1)
+    lo, hi = int(i), min(int(i) + 1, len(prices) - 1)
+    return prices[lo] + (prices[hi] - prices[lo]) * (i - lo)
+
+
+def _round5(v: float) -> int:
+    return max(5, int(5 * round(v / 5)))
+
+
 def fair_price(ctx: Ctx, category: str, height_in: float) -> dict:
-    rows = ctx.db.q("""select l.url, l.price_usd::float as price, d.h_in::float as h
-                       from listings l join listing_details d on d.listing_id = l.id
-                       where l.is_active and l.source <> 'liveroom' and d.category = %s and l.price_usd > 0""", (category,))
+    """Price that sells within a few days: local second-hand comps only (Craigslist + Marketplace, no eBay, which
+    is mostly new or shipped stock), single items only, a bit under the middle of the market.
+    fair_price = 40th percentile, low = 25th ("quick sale"), high = median ("typical")."""
+    def comps(cats: list[str]) -> list[dict]:
+        return ctx.db.q("""select l.url, l.price_usd::float as price, d.h_in::float as h
+                           from listings l join listing_details d on d.listing_id = l.id
+                           where l.is_active and l.source in ('craigslist', 'fb_marketplace') and d.category = any(%s)
+                             and l.price_usd > 0 and l.title !~* %s""", (cats, SET_TITLE))
+    rows = comps([category])
+    if len(rows) < WIDEN_BELOW and RELATED.get(category):
+        rows = comps([category, *RELATED[category]])
     if height_in:
         similar = [r for r in rows if r["h"] and abs(r["h"] - height_in) <= 0.4 * height_in]
         if len(similar) >= 3:
@@ -60,10 +92,9 @@ def fair_price(ctx: Ctx, category: str, height_in: float) -> dict:
     prices = sorted(r["price"] for r in rows)
     if len(prices) < 3:
         return {"fair_price_usd": None, "fair_low_usd": None, "fair_high_usd": None, "comps_n": len(prices), "comp_urls": []}
-    q = statistics.quantiles(prices, n=4) if len(prices) >= 4 else [prices[0], statistics.median(prices), prices[-1]]
-    med = statistics.median(prices)
-    rows.sort(key=lambda r: abs(r["price"] - med))
-    return {"fair_price_usd": round(med), "fair_low_usd": round(q[0]), "fair_high_usd": round(q[2]),
+    fair, low, high = _round5(_q(prices, 0.4)), _round5(_q(prices, 0.25)), _round5(_q(prices, 0.5))
+    rows.sort(key=lambda r: abs(r["price"] - fair))
+    return {"fair_price_usd": fair, "fair_low_usd": min(low, fair), "fair_high_usd": max(high, fair),
             "comps_n": len(prices), "comp_urls": [r["url"] for r in rows[:5]]}
 
 
