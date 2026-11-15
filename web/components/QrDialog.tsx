@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 export function QrDialog({ id, title, onClose }: { id: number; title: string; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [src, setSrc] = useState<string | null>(null);
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  // the address this page is open on (fitcheck-sd.vercel.app), so the QR never points at an old domain
+  const base = (typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
   const url = `${base}/item/${id}`;
 
   useEffect(() => {

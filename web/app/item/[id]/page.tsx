@@ -47,7 +47,9 @@ export default async function ItemPage({ params }: Props) {
   }
   if (!it) notFound();
   const h = await headers();
-  const base = env.SITE_URL || `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host')}`;
+  // the host this request came in on (fitcheck-sd.vercel.app), so the QR never points at an old domain
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  const base = host ? `${h.get('x-forwarded-proto') ?? 'https'}://${host}` : env.SITE_URL;
   const url = `${base}/item/${it.card.id}`;
   const qrSvg = await QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#15233b', light: '#ffffff' } }).catch(() => '');
 
