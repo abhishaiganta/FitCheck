@@ -54,6 +54,11 @@ export default function SellPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [auth, setAuth] = useState<{ id: number; token: string } | null>(null);
   const [mvReady, setMvReady] = useState(false);
+  const [side, setSide] = useState<File | null>(null);
+  const [est, setEst] = useState<{ w_in: number; d_in: number; h_in: number; confidence: 'low' | 'medium' | 'high'; basis: string; views: number } | null>(null);
+  const [measuring, setMeasuring] = useState(false);
+  const [measureMsg, setMeasureMsg] = useState<string | null>(null);
+  const measureRun = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const poll = useCallback(async (id: number) => {
@@ -79,6 +84,40 @@ export default function SellPage() {
   useEffect(() => {
     if (draft?.status === 'ready' && draft.glb_url) import('@google/model-viewer').then(() => setMvReady(true)).catch(() => {});
   }, [draft?.status, draft?.glb_url]);
+
+  /** Photo(s) -> estimated size, so the seller never has to know the dimensions. Fills height, type and title. */
+  const measure = useCallback(async (front: File, sideView: File | null) => {
+    const run = ++measureRun.current;
+    setMeasuring(true); setMeasureMsg(null);
+    try {
+      const fd = new FormData();
+      fd.set('photo', await shrinkPhoto(front), 'photo.jpg');
+      if (sideView) fd.set('photo2', await shrinkPhoto(sideView), 'side.jpg');
+      const res = await fetch('/api/seller/measure', { method: 'POST', body: fd });
+      const j = await res.json().catch(() => null);
+      if (run !== measureRun.current) return;
+      if (!res.ok) throw new Error(j?.error?.message ?? 'measure failed');
+      setEst(j);
+      setHeight(String(j.h_in));
+      if (j.category) setCategory(j.category as Category);
+      if (j.title) setTitle((t) => t || j.title);
+    } catch {
+      if (run !== measureRun.current) return;
+      setEst(null);
+      setMeasureMsg("Couldn't size it from the photo. Type the height instead.");
+    } finally { if (run === measureRun.current) setMeasuring(false); }
+  }, []);
+
+  /** "Looks smaller / bigger": scale the whole estimate, keeping its proportions. */
+  const nudge = (k: number) => {
+    setEst((e) => {
+      if (!e) return e;
+      const r = (v: number) => Math.max(2, Math.round(v * k * 2) / 2);
+      const next = { ...e, w_in: r(e.w_in), d_in: r(e.d_in), h_in: r(e.h_in) };
+      setHeight(String(next.h_in));
+      return next;
+    });
+  };
 
   const suggest = async () => {
     setBusy(true); setMsg(null);
@@ -131,7 +170,7 @@ export default function SellPage() {
   const startOver = () => {
     localStorage.removeItem(STORE);
     if (timer.current) clearTimeout(timer.current);
-    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false);
+    setAuth(null); setDraft(null); setFile(null); setPhoto(null); setMvReady(false); setEst(null); setSide(null); setHeight(''); setMeasureMsg(null);
   };
 
   const inputCls = 'mt-1 block min-h-11 w-full rounded-[10px] border-[1.5px] border-ink px-3';
@@ -141,18 +180,49 @@ export default function SellPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="text-4xl font-extrabold">Sell it instead of dumping it</h1>
       <p className="mt-2 text-lg text-muted">
-        One clean photo and its height. We turn it into a true-size 3D model buyers can place in their room, and suggest a fair price from similar listings nearby.
+        One clean photo. We size it for you, turn it into a true-size 3D model buyers can place in their room, and suggest a fair price from similar listings nearby.
       </p>
 
       {!auth && (
         <form className="panel mt-5 space-y-4 p-5" onSubmit={(e) => { e.preventDefault(); void create(); }}>
           <label className="block font-semibold">Photo of the item
             <input type="file" accept="image/*" capture="environment" className="mt-1 block w-full text-sm"
-              onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setPhoto(f ? URL.createObjectURL(f) : null); }} />
+              onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setPhoto(f ? URL.createObjectURL(f) : null); setEst(null); if (f) void measure(f, side); }} />
             <span className="mt-1 block text-sm font-normal text-muted">For an accurate 3D model: the whole item in frame (legs included), shot from a slight corner angle at about its own height, nothing on top of it, plain wall or floor behind.</span>
           </label>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="Your item" className="max-h-64 rounded-xl border border-line object-contain" />}
+          {(measuring || est || measureMsg) && (
+            <div className="rounded-xl border-[1.5px] border-line bg-paper p-3" aria-live="polite" data-testid="measure">
+              {measuring && <p className="font-semibold">Sizing it from your photo…</p>}
+              {!measuring && measureMsg && <p className="font-semibold text-warn">{measureMsg}</p>}
+              {!measuring && est && (
+                <>
+                  <p className="font-semibold">
+                    About {est.w_in}&quot; wide × {est.d_in}&quot; deep × {est.h_in}&quot; tall
+                    <span className="badge badge-approx ml-2">estimated</span>
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    Based on: {est.basis}. {est.confidence === 'high' ? 'A known-size object was in the shot, so this should be close.'
+                      : est.confidence === 'medium' ? 'Sized from things around it, so it may be an inch or two off.'
+                      : 'No size cue in the photo, so this is a typical size for this kind of item.'}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" className="btn btn-quiet !min-h-9 text-sm" onClick={() => nudge(0.9)}>It&apos;s smaller</button>
+                    <button type="button" className="btn btn-quiet !min-h-9 text-sm" onClick={() => nudge(1.1)}>It&apos;s bigger</button>
+                    <label className="btn btn-quiet !min-h-9 text-sm">
+                      {side ? 'Replace side photo' : 'Add a side photo'}
+                      <input type="file" accept="image/*" capture="environment" className="sr-only"
+                        onChange={(e) => { const f = e.target.files?.[0] ?? null; setSide(f); if (f && file) void measure(file, f); e.target.value = ''; }} />
+                    </label>
+                  </div>
+                  {est.confidence !== 'high' && (
+                    <p className="mt-2 text-sm text-muted">For a closer size, stand a sheet of printer paper against the item and retake the photo.</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <label className="block font-semibold">Title
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Solid oak side table" maxLength={120} className={inputCls} />
           </label>
@@ -167,7 +237,7 @@ export default function SellPage() {
                 <option value="like_new">Like new</option><option value="good">Good</option><option value="fair">Fair</option>
               </select>
             </label>
-            <label className="block font-semibold">Height (inches)
+            <label className="block font-semibold">Height (inches{est ? ', filled in from your photo' : ''})
               <input inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="22" className={inputCls} />
             </label>
             <label className="block font-semibold">Asking price ($, optional)

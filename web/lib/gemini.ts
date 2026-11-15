@@ -117,3 +117,71 @@ export async function embedText(text: string): Promise<number[] | null> {
     return null;
   }
 }
+
+export type SizeEstimate = {
+  category: string | null;
+  title: string | null;
+  w_in: number; d_in: number; h_in: number;
+  confidence: 'low' | 'medium' | 'high';
+  /** what the estimate leans on, shown to the seller: "door frame behind it", "typical desk chair" */
+  basis: string;
+};
+
+const MEASURE_PROMPT = `You estimate the real-world size of ONE piece of furniture from a seller's photo(s).
+The photos show the same item (front, and sometimes a side view). Work like a careful appraiser:
+1. Identify the item and its type.
+2. Look for scale cues in the scene, in this order of trust: a sheet of letter paper (8.5 x 11 in), a credit card,
+   a standard interior door (80 in tall, 30-36 in wide), a wall outlet or light switch plate (4.5 in tall),
+   a door knob (36 in from the floor), floor tiles or planks, a bed, a laptop, a water bottle, a person's hand.
+3. If there is no usable cue, fall back on typical sizes for exactly this kind of item and say so.
+Return the overall bounding box in inches: width (left to right as it faces you), depth (front to back), height (floor to top).
+confidence: "high" only with a known-size reference object clearly next to the item; "medium" with indirect cues
+(door, outlet, tiles); "low" when you relied on typical sizes. basis: under 12 words, plain English, naming the cue you used.
+category must be one of: side_table, nightstand, coffee_table, desk_lamp, floor_lamp, stool, ottoman, accent_chair,
+dining_chair, dresser, bookshelf, desk; or "other". title: 3 to 6 words a seller would use.`;
+
+/**
+ * Size from photos, no typing. A web page cannot use LiDAR or ARKit, so this is an estimate from visual cues;
+ * the sell page labels it that way and lets the seller correct it. Uses the fast multimodal model so it does
+ * not share the worker's vision-model daily quota.
+ */
+export async function estimateItemSize(images: { mime: string; b64: string }[]): Promise<SizeEstimate> {
+  const model = process.env.GEMINI_MODEL_MEASURE || env.GEMINI_MODEL_FAST;
+  const data = await call<any>(model, 'generateContent', {
+    systemInstruction: { parts: [{ text: MEASURE_PROMPT }] },
+    contents: [{ role: 'user', parts: [
+      ...images.map((i) => ({ inlineData: { mimeType: i.mime, data: i.b64 } })),
+      { text: 'Estimate this item\'s width, depth and height in inches.' },
+    ] }],
+    generationConfig: {
+      temperature: 0, maxOutputTokens: 300, responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          category: { type: 'STRING' }, title: { type: 'STRING' },
+          w_in: { type: 'NUMBER' }, d_in: { type: 'NUMBER' }, h_in: { type: 'NUMBER' },
+          confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] }, basis: { type: 'STRING' },
+        },
+        required: ['w_in', 'd_in', 'h_in', 'confidence', 'basis'],
+      },
+    },
+  }, 12_000);
+  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.find((p: any) => typeof p.text === 'string')?.text;
+  return parseSizeEstimate(text);
+}
+
+/** Validates the model's JSON. Exported for tests. Throws a retryable error on nonsense. */
+export function parseSizeEstimate(text: string | undefined): SizeEstimate {
+  let j: any;
+  try { j = JSON.parse(text ?? ''); } catch { throw err.upstream('gemini', "Couldn't read the size from that photo.", true); }
+  const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 2 && n <= 120 ? Math.round(n * 2) / 2 : null; };
+  const w = num(j?.w_in), d = num(j?.d_in), h = num(j?.h_in);
+  if (w == null || d == null || h == null) throw err.upstream('gemini', "Couldn't read the size from that photo.", true);
+  const confidence = ['low', 'medium', 'high'].includes(j.confidence) ? j.confidence : 'low';
+  return {
+    category: typeof j.category === 'string' && j.category !== 'other' ? j.category : null,
+    title: typeof j.title === 'string' ? j.title.trim().slice(0, 80) || null : null,
+    w_in: w, d_in: d, h_in: h, confidence,
+    basis: typeof j.basis === 'string' ? j.basis.trim().slice(0, 90) : 'typical size for this kind of item',
+  };
+}

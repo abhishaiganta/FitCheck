@@ -160,6 +160,32 @@ describe('database unreachable', () => {
   });
 });
 
+describe('seller size estimate from a photo', () => {
+  it('sends the photo to the fast model and returns validated inches', async () => {
+    process.env.GEMINI_API_KEYS = 'k1';
+    let body: any;
+    globalThis.fetch = vi.fn(async (url: any, init: any) => {
+      expect(String(url)).toContain(':generateContent');
+      body = JSON.parse(init.body);
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({
+        category: 'side_table', title: 'Walnut side table', w_in: 18.2, d_in: 17.9, h_in: 22.26, confidence: 'medium', basis: 'outlet plate on the wall behind it' }) }] } }] }));
+    }) as any;
+    const { estimateItemSize } = await import('@/lib/gemini');
+    const out = await estimateItemSize([{ mime: 'image/jpeg', b64: 'AAAA' }, { mime: 'image/jpeg', b64: 'BBBB' }]);
+    expect(out).toMatchObject({ category: 'side_table', w_in: 18, d_in: 18, h_in: 22.5, confidence: 'medium' });
+    expect(body.contents[0].parts.filter((p: any) => p.inlineData).length).toBe(2);
+    expect(body.generationConfig.responseMimeType).toBe('application/json');
+  });
+  it('rejects nonsense instead of filling the form with it', async () => {
+    const { parseSizeEstimate } = await import('@/lib/gemini');
+    expect(() => parseSizeEstimate('not json')).toThrow(/Couldn't read the size/);
+    expect(() => parseSizeEstimate(JSON.stringify({ w_in: 0, d_in: 10, h_in: 10 }))).toThrow();
+    expect(() => parseSizeEstimate(JSON.stringify({ w_in: 20, d_in: 20, h_in: 900 }))).toThrow();
+    expect(parseSizeEstimate(JSON.stringify({ w_in: 20, d_in: 20, h_in: 30, confidence: 'certain', category: 'other' })))
+      .toMatchObject({ confidence: 'low', category: null, basis: 'typical size for this kind of item' });
+  });
+});
+
 describe('error shaping and per-IP limits', () => {
   it('unknown errors become a generic 500 with no internals', () => {
     const a = toAppError(new Error('secret stack: key=sk_123'));
