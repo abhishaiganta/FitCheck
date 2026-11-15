@@ -8,8 +8,8 @@ import { CardSkeleton, ListingCard } from './ListingCard';
 type Phase = 'idle' | 'recording' | 'transcribing' | 'searching';
 const EXAMPLES = [
   'desk lamp and side table under $40, warm wood',
-  'bookshelf under $50 near Pepper Canyon, no car',
-  'accent chair, mid-century, within 15 minutes',
+  'bookshelf under $60',
+  'something to sit on under $50',
 ];
 const ENGINE_LABEL = { agent: 'Understood by the Mastra agent', gemini: 'Understood by Gemini', keyword: 'Understood by the keyword parser' } as const;
 // 0.1 s of silence: playing it inside a tap unlocks audio on iOS so the spoken reply can play later.
