@@ -1,12 +1,9 @@
 import { CATEGORY_LABEL, isCategory } from '../logic/categories';
-import { shortCarName } from '../logic/carFit';
 import { maxRoadMiles } from '../logic/cost';
 import type { SearchArgs } from './schema';
 import type { Card, Profile, WidenChip } from './types';
 import type { Origin } from '../logic/geo';
 
-const money = (n: number) => (n <= 0 ? 'free' : `$${Number.isInteger(n) ? n : n.toFixed(2)}`);
-const miles = (n: number) => `${n.toFixed(1).replace(/\.0$/, '')} mile${n === 1 ? '' : 's'}`;
 
 function countPhrase(cards: Card[]): string {
   const by = new Map<string, number>();
@@ -20,28 +17,10 @@ function countPhrase(cards: Card[]): string {
   return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
 }
 
-/** Short reply for ElevenLabs: "Found 3 desk lamps under $30. The closest is free, 1.2 miles away." */
+/** Short reply for ElevenLabs: "Found 3 desk lamps under $30." Just the count: prices and distances are on the cards. */
 export function spokenSummary(cards: Card[], f: SearchArgs): string {
   if (!cards.length) return emptyMessage(f);
-  const s: string[] = [];
-  s.push(`Found ${countPhrase(cards)}${f.max_total_usd ? ` under $${f.max_total_usd}` : ''}.`);
-  const pickups = cards.filter((c) => c.road_mi != null && c.mode !== 'ship' && c.loc_precise !== false).sort((a, b) => a.road_mi! - b.road_mi!);
-  const closest = pickups[0];
-  if (closest) {
-    s.push(`The closest is ${money(closest.price_usd)}, about ${miles(closest.road_mi!)} away${closest.mode === 'walk' ? ', close enough to walk' : ''}.`);
-  }
-  const shipped = cards.filter((c) => c.mode === 'ship' && (c.savings_usd ?? 0) > 0).sort((a, b) => b.savings_usd! - a.savings_usd!)[0];
-  if (shipped) s.push(`One ships for ${money(shipped.total_usd)} total and saves about $${shipped.savings_usd} versus new.`);
-  else if (!closest) {
-    const cheapest = [...cards].sort((a, b) => a.total_usd - b.total_usd)[0];
-    s.push(`The cheapest is ${money(cheapest.total_usd)} with shipping.`);
-  }
-  const car = cards.find((c) => c.car_name)?.car_name;
-  if (car) {
-    const tooBig = cards.filter((c) => c.car_fit === 'too_big').length;
-    s.push(tooBig === 0 ? `Everything should fit in your ${shortCarName(car)}.` : `${tooBig} of them won't fit in your ${shortCarName(car)}.`);
-  }
-  return s.join(' ');
+  return `Found ${countPhrase(cards)}${f.max_total_usd ? ` under $${f.max_total_usd}` : ''}.`;
 }
 
 export function emptyMessage(f: SearchArgs): string {
