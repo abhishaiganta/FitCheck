@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { query } from '@/lib/db';
 import { err, route } from '@/lib/errors';
 import { checkIpLimit } from '@/lib/ratelimit';
+import { ensureWorker } from '@/lib/worker';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,8 @@ export const GET = route('api.seller.draft.get', async (req: Request, ctx: Ctx) 
   checkIpLimit(req, 'seller-draft-get', 120);
   const [row] = await query(SELECT, [await draftId(ctx)], { branch: 'main' });
   if (!row) throw err.notFound('That draft');
+  // still building: if the worker run that took this job has ended, start another (checked at most once a minute)
+  if (row.status !== 'ready' && row.status !== 'failed') after(() => ensureWorker(60_000));
   return NextResponse.json(row, { headers: { 'cache-control': 'no-store' } });
 });
 

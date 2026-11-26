@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { blobEnabled, blobPut } from '@/lib/blob';
 import { query } from '@/lib/db';
 import { env } from '@/lib/env';
@@ -7,6 +7,7 @@ import { err, route } from '@/lib/errors';
 import { categoryFromText, isCategory } from '@/lib/logic/categories';
 import { checkIpLimit } from '@/lib/ratelimit';
 import { sellerPrice, type Condition } from '@/lib/seller/price';
+import { ensureWorker } from '@/lib/worker';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -71,5 +72,7 @@ export const POST = route('api.seller.draft', async (req: Request) => {
       price.suggested_usd, price.low_usd, price.high_usd, price.comparables, price.source, price.basis],
     { branch: 'main' },
   );
+  // start the 3D worker now instead of waiting for its schedule (after the response, so the upload stays fast)
+  after(() => ensureWorker());
   return NextResponse.json({ id: row.id, token, photo_url: url, status: 'new' });
 });

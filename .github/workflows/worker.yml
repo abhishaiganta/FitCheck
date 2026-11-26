@@ -18,7 +18,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
 
@@ -49,6 +49,7 @@ jobs:
           if [ -z "$WORKER_ENV" ]; then echo "WORKER_ENV secret is missing"; exit 1; fi
           printf '%s\n' "$WORKER_ENV" > worker/.env
 
-      - name: Work the queue for 12 minutes
-        # SIGINT = the worker's own Ctrl-C path: finish the current item, release locks, exit.
-        run: timeout -s INT -k 90s 12m python -m worker.run --loop --stages seller,select,cutout,gen,export || [ $? -eq 124 ]
+      - name: Work the queue for about 11 minutes
+        # The worker stops itself after --max-minutes (finishing the current item, releasing locks, exit 0).
+        # timeout is only a safety net if a stage hangs.
+        run: timeout -k 30s 14m python -m worker.run --loop --max-minutes 11 --stages seller,select,cutout,gen,export

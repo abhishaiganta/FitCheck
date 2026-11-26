@@ -55,6 +55,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--stages", default=DEFAULT, help=f"comma separated, from: {', '.join(STAGES)}")
     ap.add_argument("--loop", action="store_true", help="keep running until Ctrl-C")
     ap.add_argument("--interval", type=float, default=5.0, help="seconds between loops (idle loops back off to 20 s)")
+    ap.add_argument("--max-minutes", type=float, default=0,
+                    help="with --loop: exit cleanly after this many minutes (0 = no limit)")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
 
@@ -88,12 +90,16 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as e:  # noqa: BLE001
         log.error("cannot reach the database: %s", e)
         return 2
+    deadline = time.monotonic() + args.max_minutes * 60 if args.max_minutes > 0 else None
     try:
         while True:
             out = run_once(ctx, stages)
             if not args.loop or ctx.stop.is_set():
                 break
-            ctx.stop.wait(args.interval if any(out.values()) else max(args.interval, 20.0))
+            if deadline is not None and time.monotonic() >= deadline:
+                log.info("reached --max-minutes %g, stopping", args.max_minutes)
+                break
+            ctx.stop.wait(args.interval if any(out.values()) else max(args.interval, 5.0))
     finally:
         try:
             released = ctx.db.release_locks()
